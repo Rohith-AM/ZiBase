@@ -1,0 +1,7 @@
+/* ZiBase Plugin Styles — ZIYAL (ழியல்) v0.6.0 */
+/* Inline styles injected via renderer.ts — this file kept minimal for Obsidian */
+.zibase-settings-desc {
+  color: var(--text-muted);
+  font-size: 0.9em;
+  margin-bottom: 1em;
+}
