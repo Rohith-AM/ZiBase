@@ -2,7 +2,7 @@
 
 **Markdown tables as living databases — for Obsidian.**
 
-[![Ko-fi](https://img.shields.io/badge/Support%20on-Ko--fi-FF5E5B?style=flat&logo=ko-fi&logoColor=white)](https://ko-fi.com/rohithzi)
+[![GitHub Sponsors](https://img.shields.io/badge/Sponsor%20on-GitHub-ea4aaa?style=flat&logo=github-sponsors&logoColor=white)](https://github.com/sponsors/Rohith-AM)
 
 ZiBase turns an ordinary markdown table into a rich, interactive database view: sortable/filterable columns, Kanban/Gallery/Calendar layouts, drag-and-drop, formula columns, and inline editing — all while your data stays as plain, portable markdown. No extra files, no proprietary format, no lock-in.
 
@@ -111,11 +111,11 @@ Please open an issue on the GitHub repo with a minimal example table if you hit 
 
 ## Support
 
-ZiBase is built solo as a passion project. If it saves you time or makes your Obsidian vault feel a little more alive, consider buying me a coffee — it genuinely helps with university expenses and keeps the motivation going! ☕
+ZiBase is built solo as a passion project. If it saves you time or makes your Obsidian vault feel a little more alive, consider sponsoring — it genuinely helps with university expenses and keeps the motivation going! 🙏
 
-[![Buy Me a Coffee on Ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/rohithzi)
+[![Sponsor on GitHub](https://img.shields.io/badge/Sponsor%20on-GitHub-ea4aaa?style=flat&logo=github-sponsors&logoColor=white)](https://github.com/sponsors/Rohith-AM)
 
-Completely optional — even a star ⭐ on the repo means a lot!
+Completely optional — even a ⭐ star on the repo means a lot!
 
 ## License
 
