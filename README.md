@@ -8,6 +8,17 @@ ZiBase turns an ordinary markdown table into a rich, interactive database view: 
 
 Built from scratch under [ZIYAL (ழியல்)](https://github.com/rohith-am).
 
+## Screenshots
+
+![Table View](assets/table-view.png)
+*Annotated table with custom column types (Toggle, Select, Number, Date, Label) and auto-inferred plain table.*
+
+![Kanban and Gallery Views](assets/kanban-gallery.png)
+*Kanban view grouped by priority, and Gallery view for quick card-based browsing.*
+
+![Calendar View](assets/calendar.png)
+*Calendar view automatically generated from a Date column.*
+
 ---
 
 ## Features
