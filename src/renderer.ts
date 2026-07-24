@@ -1,439 +1,3 @@
-/*
-THIS IS A GENERATED/COMPILED FILE. TO VIEW THE SOURCE, GO TO src/main.ts
-*/
-
-var __defProp = Object.defineProperty;
-var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
-var __getOwnPropNames = Object.getOwnPropertyNames;
-var __hasOwnProp = Object.prototype.hasOwnProperty;
-var __export = (target, all) => {
-  for (var name in all)
-    __defProp(target, name, { get: all[name], enumerable: true });
-};
-var __copyProps = (to, from, except, desc) => {
-  if (from && typeof from === "object" || typeof from === "function") {
-    for (let key of __getOwnPropNames(from))
-      if (!__hasOwnProp.call(to, key) && key !== except)
-        __defProp(to, key, { get: () => from[key], enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable });
-  }
-  return to;
-};
-var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
-
-
-// src/schema.ts
-
-var ANNOTATION_RE = /<!--\s*zibase:\s*([^\s>]+(?:\s*[^\s>]+)*)\s*-->/i;
-var VIEW_ANNOTATION_RE = /<!--\s*zibase-view:\s*(\w+)(?::([^>]+))?\s*-->/i;
-var DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
-var NUMBER_RE = /^-?\d+(\.\d+)?$/;
-var DEFAULT_COLUMN_RULES = [
-  { name: "domain", type: "label" },
-  { name: "category", type: "label" },
-  { name: "tag", type: "label" },
-  { name: "tags", type: "label" },
-  { name: "type", type: "label" },
-  { name: "label", type: "label" },
-  { name: "labels", type: "label" },
-  { name: "done", type: "toggle" },
-  { name: "completed", type: "toggle" },
-  { name: "status", type: "select" }
-];
-function parseZiBaseSchema(lines, columnRules = DEFAULT_COLUMN_RULES) {
-  if (lines.length < 2)
-    return null;
-  const headerCells = splitRow(lines[0]);
-  if (headerCells.length === 0)
-    return null;
-  if (lines.length >= 3) {
-    const schemaCells = splitRow(lines[2]);
-    const hasAnnotations = schemaCells.some((c) => ANNOTATION_RE.test(c));
-    if (hasAnnotations) {
-      const columns2 = headerCells.map((name, i) => {
-        var _a;
-        const cell = (_a = schemaCells[i]) != null ? _a : "";
-        const match = cell.match(ANNOTATION_RE);
-        const typeStr = match ? match[1] : "text";
-        return { name: name.trim(), type: parseType(typeStr), index: i };
-      });
-      return { columns: columns2, schemaRowIndex: 2, dataStartIndex: 3, inferred: false };
-    }
-  }
-  if (lines.length < 3)
-    return null;
-  const dataLines = lines.slice(2).filter((l) => l.trim() && l.includes("|"));
-  if (dataLines.length === 0)
-    return null;
-  const colValues = headerCells.map(() => []);
-  dataLines.forEach((line) => {
-    const cells = splitRow(line);
-    headerCells.forEach((_, i) => {
-      var _a;
-      const v = ((_a = cells[i]) != null ? _a : "").trim();
-      if (v)
-        colValues[i].push(v);
-    });
-  });
-  const columns = headerCells.map((name, i) => ({
-    name: name.trim(),
-    type: inferType(name.trim(), colValues[i], columnRules),
-    index: i
-  }));
-  return { columns, schemaRowIndex: null, dataStartIndex: 2, inferred: true };
-}
-
-/**
- * Parse the view annotation from lines above or near the table.
- * Format: <!-- zibase-view: kanban:Status -->
- * Returns { view: "kanban", groupBy: "Status" } or null
- */
-function parseViewAnnotation(lines) {
-  for (let i = 0; i < Math.min(lines.length, 3); i++) {
-    const match = lines[i].match(VIEW_ANNOTATION_RE);
-    if (match) {
-      return { view: match[1].toLowerCase(), groupBy: match[2] ? match[2].trim() : null };
-    }
-  }
-  return null;
-}
-
-function inferType(colName, values, columnRules) {
-  if (values.length === 0)
-    return { kind: "text" };
-  if (values.every((v) => v.toLowerCase() === "true" || v.toLowerCase() === "false"))
-    return { kind: "toggle" };
-  if (values.every((v) => DATE_RE.test(v)))
-    return { kind: "date" };
-  if (values.every((v) => NUMBER_RE.test(v)))
-    return { kind: "number" };
-  const rule = columnRules.find((r) => r.name.toLowerCase() === colName.toLowerCase());
-  if (rule)
-    return parseType(rule.type);
-  const unique = [...new Set(values.map((v) => v.toLowerCase()))];
-  const allShort = values.every((v) => v.length <= 20);
-  const isRepeated = values.length >= 2 && unique.length <= Math.max(2, Math.floor(values.length * 0.75)) && unique.length <= 10;
-  if (isRepeated && allShort) {
-    const seen = /* @__PURE__ */ new Map();
-    values.forEach((v) => {
-      if (!seen.has(v.toLowerCase()))
-        seen.set(v.toLowerCase(), v);
-    });
-    return { kind: "select", options: [...seen.values()] };
-  }
-  return { kind: "text" };
-}
-function parseType(typeStr) {
-  if (typeStr.startsWith("select:")) {
-    const options = typeStr.slice(7).split(",").map((s) => s.trim());
-    return { kind: "select", options };
-  }
-  if (typeStr.startsWith("formula:")) {
-    const expression = typeStr.slice(8).trim();
-    return { kind: "formula", expression };
-  }
-  switch (typeStr.toLowerCase()) {
-    case "toggle":
-      return { kind: "toggle" };
-    case "label":
-      return { kind: "label" };
-    case "number":
-      return { kind: "number" };
-    case "date":
-      return { kind: "date" };
-    case "formula":
-      return { kind: "formula", expression: "" };
-    default:
-      return { kind: "text" };
-  }
-}
-function splitRow(row) {
-  const stripped = row.replace(/^\||\|$/g, "");
-  const cells = [];
-  let current = "";
-  for (let i = 0; i < stripped.length; i++) {
-    if (stripped[i] === "\\" && stripped[i + 1] === "|") {
-      current += "|";
-      i++;
-    } else if (stripped[i] === "|") {
-      cells.push(current.trim());
-      current = "";
-    } else {
-      current += stripped[i];
-    }
-  }
-  cells.push(current.trim());
-  return cells;
-}
-function serializeRow(cells) {
-  return "| " + cells.join(" | ") + " |";
-}
-function parseBool(val) {
-  return val.trim().toLowerCase() === "true";
-}
-function serializeBool(val) {
-  return val ? "true" : "false";
-}
-
-
-// src/formula.ts
-
-// ─── ZiBase Formula Engine v1.0.0 ── ZIYAL (ழியல்) ──────────────────────────
-// Safe math evaluator — NO eval(). Recursive descent parser.
-// Supports: +, -, *, /, %, parentheses, column references (case-insensitive)
-
-var FORMULA_NUMBER_RE = /^-?\d+(\.\d+)?$/;
-
-/**
- * Check if a raw cell value is wrapped in backticks → plain text mode
- */
-function isBackticked(raw) {
-  const trimmed = raw.trim();
-  return trimmed.startsWith('`') && trimmed.endsWith('`') && trimmed.length >= 2;
-}
-
-/**
- * Strip backticks from a value
- */
-function stripBackticks(raw) {
-  const trimmed = raw.trim();
-  return trimmed.slice(1, -1);
-}
-
-/**
- * Check if a raw value looks like simple inline math (e.g. "5*10", "100/4+2")
- * Must contain at least one operator and consist only of numbers/operators/parens/spaces
- */
-function isSimpleMath(raw) {
-  const trimmed = raw.trim();
-  if (!trimmed) return false;
-  if (FORMULA_NUMBER_RE.test(trimmed)) return false; // plain number, not math
-  // Must only contain digits, operators, parens, dots, spaces
-  if (!/^[\d\s+\-*/%().]+$/.test(trimmed)) return false;
-  // Must contain at least one operator
-  if (!/[+\-*/%]/.test(trimmed)) return false;
-  // Shouldn't start with an operator (except minus for negative)
-  if (/^[+*/%]/.test(trimmed)) return false;
-  return true;
-}
-
-/**
- * Evaluate a formula expression with column references resolved from row data.
- * @param expression  The formula expression (e.g. "Price * Qty")
- * @param rowData     Map of column name → raw cell value
- * @returns           Computed number or null on error
- */
-function evaluateFormula(expression, rowData) {
-  if (!expression || !expression.trim()) return null;
-
-  // Replace column references with their numeric values (case-insensitive)
-  let resolved = expression;
-
-  // Sort column names by length (longest first) to avoid partial replacement
-  // e.g., "Total Price" should be replaced before "Price"
-  const colNames = Object.keys(rowData).sort((a, b) => b.length - a.length);
-
-  for (const colName of colNames) {
-    // Case-insensitive replacement of column name with its value
-    const regex = new RegExp(escapeRegex(colName), 'gi');
-    const rawVal = rowData[colName];
-    const numVal = parseFloat(rawVal);
-
-    if (isNaN(numVal)) {
-      // If referenced column has non-numeric value, can't compute
-      if (regex.test(resolved)) {
-        // Check if this column name is actually used in the expression
-        const testResolved = resolved.replace(regex, '0');
-        if (testResolved !== resolved) {
-          return null; // Non-numeric reference → can't evaluate
-        }
-      }
-      continue;
-    }
-
-    resolved = resolved.replace(regex, numVal.toString());
-  }
-
-  // Now `resolved` should be a pure math expression
-  try {
-    return safeEval(resolved);
-  } catch (e) {
-    return null;
-  }
-}
-
-/**
- * Evaluate a simple math expression (no column refs, just numbers and operators)
- */
-function evaluateSimpleMath(expression) {
-  try {
-    return safeEval(expression);
-  } catch (e) {
-    return null;
-  }
-}
-
-/**
- * Format a computed result for display
- */
-function formatResult(value) {
-  if (value === null || value === undefined || isNaN(value)) return '—';
-  if (!isFinite(value)) return '∞';
-  // Clean up floating point: show up to 6 decimal places, strip trailing zeros
-  const str = parseFloat(value.toFixed(6)).toString();
-  return str;
-}
-
-// ─── Safe Math Parser (Recursive Descent) ────────────────────────────────────
-// Grammar:
-//   expr     → term (('+' | '-') term)*
-//   term     → unary (('*' | '/' | '%') unary)*
-//   unary    → '-' unary | primary
-//   primary  → NUMBER | '(' expr ')'
-
-function safeEval(expression) {
-  const tokens = tokenize(expression);
-  const parser = { tokens, pos: 0 };
-  const result = parseExpr(parser);
-
-  // Ensure all tokens were consumed
-  if (parser.pos < parser.tokens.length) {
-    throw new Error('Unexpected token: ' + parser.tokens[parser.pos].value);
-  }
-
-  return result;
-}
-
-function tokenize(expr) {
-  const tokens = [];
-  let i = 0;
-  const s = expr.trim();
-
-  while (i < s.length) {
-    // Skip whitespace
-    if (s[i] === ' ' || s[i] === '\t') {
-      i++;
-      continue;
-    }
-
-    // Number (including decimals)
-    if ((s[i] >= '0' && s[i] <= '9') || (s[i] === '.' && i + 1 < s.length && s[i + 1] >= '0' && s[i + 1] <= '9')) {
-      let num = '';
-      while (i < s.length && ((s[i] >= '0' && s[i] <= '9') || s[i] === '.')) {
-        num += s[i];
-        i++;
-      }
-      tokens.push({ type: 'number', value: parseFloat(num) });
-      continue;
-    }
-
-    // Operators
-    if ('+-*/%'.includes(s[i])) {
-      tokens.push({ type: 'op', value: s[i] });
-      i++;
-      continue;
-    }
-
-    // Parentheses
-    if (s[i] === '(') {
-      tokens.push({ type: 'lparen', value: '(' });
-      i++;
-      continue;
-    }
-    if (s[i] === ')') {
-      tokens.push({ type: 'rparen', value: ')' });
-      i++;
-      continue;
-    }
-
-    throw new Error('Unexpected character: ' + s[i]);
-  }
-
-  return tokens;
-}
-
-function parseExpr(parser) {
-  let left = parseTerm(parser);
-
-  while (parser.pos < parser.tokens.length) {
-    const tok = parser.tokens[parser.pos];
-    if (tok.type === 'op' && (tok.value === '+' || tok.value === '-')) {
-      parser.pos++;
-      const right = parseTerm(parser);
-      left = tok.value === '+' ? left + right : left - right;
-    } else {
-      break;
-    }
-  }
-
-  return left;
-}
-
-function parseTerm(parser) {
-  let left = parseUnary(parser);
-
-  while (parser.pos < parser.tokens.length) {
-    const tok = parser.tokens[parser.pos];
-    if (tok.type === 'op' && (tok.value === '*' || tok.value === '/' || tok.value === '%')) {
-      parser.pos++;
-      const right = parseUnary(parser);
-      if (tok.value === '*') left = left * right;
-      else if (tok.value === '/') left = right === 0 ? Infinity : left / right;
-      else left = left % right;
-    } else {
-      break;
-    }
-  }
-
-  return left;
-}
-
-function parseUnary(parser) {
-  if (parser.pos < parser.tokens.length) {
-    const tok = parser.tokens[parser.pos];
-    if (tok.type === 'op' && tok.value === '-') {
-      parser.pos++;
-      return -parseUnary(parser);
-    }
-    if (tok.type === 'op' && tok.value === '+') {
-      parser.pos++;
-      return parseUnary(parser);
-    }
-  }
-  return parsePrimary(parser);
-}
-
-function parsePrimary(parser) {
-  if (parser.pos >= parser.tokens.length) {
-    throw new Error('Unexpected end of expression');
-  }
-
-  const tok = parser.tokens[parser.pos];
-
-  if (tok.type === 'number') {
-    parser.pos++;
-    return tok.value;
-  }
-
-  if (tok.type === 'lparen') {
-    parser.pos++; // consume '('
-    const result = parseExpr(parser);
-    if (parser.pos >= parser.tokens.length || parser.tokens[parser.pos].type !== 'rparen') {
-      throw new Error('Missing closing parenthesis');
-    }
-    parser.pos++; // consume ')'
-    return result;
-  }
-
-  throw new Error('Unexpected token: ' + tok.value);
-}
-
-// ─── Utilities ───────────────────────────────────────────────────────────────
-
-function escapeRegex(str) {
-  return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-}
-
-// src/renderer.ts
 
 var import_obsidian = require("obsidian");
 
@@ -591,31 +155,7 @@ var ZiBaseTableRenderer = class {
     });
     const body = wrapper.createDiv("zibase-body");
 
-    // ─── View Rendering Dispatcher ────────────────────────────────────────────
-    const renderViewContent = () => {
-      body.querySelectorAll(".zibase-table, .zibase-kanban, .zibase-gallery, .zibase-calendar, .zibase-stats-row").forEach(el => el.remove());
-
-      switch (currentView) {
-        case "kanban":
-          this.buildKanbanView(body, schema, getDataRows, rawDataLines, context, sectionInfo, filterQuery);
-          break;
-        case "gallery":
-          this.buildGalleryView(body, schema, getDataRows, rawDataLines, context, sectionInfo, filterQuery);
-          break;
-        case "calendar":
-          this.buildCalendarView(body, schema, getDataRows, rawDataLines, context, sectionInfo, filterQuery);
-          break;
-        default:
-          this.buildTableView(body, schema, getDataRows, rawDataLines, context, sectionInfo, filterQuery, sortColIdx, sortAsc, badge, (col, asc) => {
-            sortColIdx = col;
-            sortAsc = asc;
-          });
-          break;
-      }
-    };
-
-    renderViewContent();
-
+    // Create footer FIRST so it stays at the bottom after re-renders
     const footer = body.createDiv("zibase-footer");
     const addRowBtn = footer.createEl("button", { cls: "zibase-add-row-btn" });
     addRowBtn.innerHTML = `<svg width="10" height="10" viewBox="0 0 10 10"><line x1="5" y1="1" x2="5" y2="9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><line x1="1" y1="5" x2="9" y2="5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg> Add row`;
@@ -626,6 +166,37 @@ var ZiBaseTableRenderer = class {
       const visible = filterQuery ? getDataRows().filter((l) => splitRow(l).some((c) => c.toLowerCase().includes(filterQuery.toLowerCase()))).length : total;
       rowCount.textContent = filterQuery && visible !== total ? `${visible} / ${total} rows` : `${total} rows`;
     };
+
+    // ─── View Rendering Dispatcher ────────────────────────────────────────────
+    const renderViewContent = () => {
+      body.querySelectorAll(".zibase-table, .zibase-kanban, .zibase-gallery, .zibase-calendar").forEach(el => el.remove());
+
+      // Create a container for the view content, inserted BEFORE footer
+      const viewContainer = document.createElement("div");
+      switch (currentView) {
+        case "kanban":
+          this.buildKanbanView(viewContainer, schema, getDataRows, rawDataLines, context, sectionInfo, filterQuery);
+          break;
+        case "gallery":
+          this.buildGalleryView(viewContainer, schema, getDataRows, rawDataLines, context, sectionInfo, filterQuery);
+          break;
+        case "calendar":
+          this.buildCalendarView(viewContainer, schema, getDataRows, rawDataLines, context, sectionInfo, filterQuery);
+          break;
+        default:
+          this.buildTableView(viewContainer, schema, getDataRows, rawDataLines, context, sectionInfo, filterQuery, sortColIdx, sortAsc, badge, (col, asc) => {
+            sortColIdx = col;
+            sortAsc = asc;
+          });
+          break;
+      }
+      // Move children from container into body, before footer
+      while (viewContainer.firstChild) {
+        body.insertBefore(viewContainer.firstChild, footer);
+      }
+    };
+
+    renderViewContent();
     updateCount();
     collapseBtn.addEventListener("click", () => {
       collapsed = !collapsed;
@@ -646,6 +217,7 @@ var ZiBaseTableRenderer = class {
     const tableEl = body.createEl("table", { cls: "zibase-table" });
     const thead = tableEl.createEl("thead");
     const headerRow = thead.createEl("tr");
+    var statModes = {};
     schema.columns.forEach((col, colIdx) => {
       const th = headerRow.createEl("th", { cls: "zibase-th" });
       th.draggable = true;
@@ -654,34 +226,85 @@ var ZiBaseTableRenderer = class {
       th.addEventListener("dragleave", () => { th.style.borderLeft = ""; });
       th.addEventListener("dragend", () => { thead.querySelectorAll(".zibase-th").forEach(el => el.style.borderLeft = ""); });
       th.addEventListener("drop", async (e) => {
-         e.preventDefault(); e.stopPropagation();
-         th.style.borderLeft = "";
-         const fromColStr = e.dataTransfer.getData("text/col");
-         if (!fromColStr) return;
-         const fromColIdx = parseInt(fromColStr, 10);
-         if (fromColIdx === colIdx) return;
-         const file = this.app.vault.getAbstractFileByPath(context.sourcePath);
-         if (!file) return;
-         await this.app.vault.process(file, (content) => {
-            const allLines = content.split("\n");
-            for (let i = sectionInfo.lineStart; i <= sectionInfo.lineEnd; i++) {
-                const line = allLines[i];
-                if (!line.includes("|")) continue;
-                const cells = splitRow(line);
-                if (cells.length <= fromColIdx || cells.length <= colIdx) continue;
-                const draggedCell = cells.splice(fromColIdx, 1)[0];
-                let insertIdx = colIdx;
-                if (fromColIdx < colIdx) insertIdx--;
-                cells.splice(insertIdx, 0, draggedCell);
-                allLines[i] = serializeRow(cells);
-            }
-            return allLines.join("\n");
-         });
+        e.preventDefault(); e.stopPropagation();
+        th.style.borderLeft = "";
+        const fromColStr = e.dataTransfer.getData("text/col");
+        if (!fromColStr) return;
+        const fromColIdx = parseInt(fromColStr, 10);
+        if (fromColIdx === colIdx) return;
+        const file = this.app.vault.getAbstractFileByPath(context.sourcePath);
+        if (!file) return;
+        await this.app.vault.process(file, (content) => {
+          const allLines = content.split("\n");
+          for (let i = sectionInfo.lineStart; i <= sectionInfo.lineEnd; i++) {
+            const line = allLines[i];
+            if (!line.includes("|")) continue;
+            const cells = splitRow(line);
+            if (cells.length <= fromColIdx || cells.length <= colIdx) continue;
+            const draggedCell = cells.splice(fromColIdx, 1)[0];
+            let insertIdx = colIdx;
+            if (fromColIdx < colIdx) insertIdx--;
+            cells.splice(insertIdx, 0, draggedCell);
+            allLines[i] = serializeRow(cells);
+          }
+          return allLines.join("\n");
+        });
       });
       const thInner = th.createDiv("zibase-th-inner");
       thInner.createSpan({ text: col.name, cls: "zibase-th-name" });
       thInner.createSpan({ text: getTypeIcon(col.type), cls: "zibase-type-icon" });
       thInner.createSpan({ cls: "zibase-sort-arrow", text: "\u2195" });
+
+      // ─── Inline stats badge for number/formula columns ──────────────
+      if (col.type.kind === "number" || col.type.kind === "formula") {
+        if (!statModes[colIdx]) statModes[colIdx] = "SUM";
+        const statBadge = th.createDiv("zibase-th-stat");
+
+        const updateThStat = () => {
+          let dataRows = getDataRows();
+          if (filterQuery) {
+            const q = filterQuery.toLowerCase();
+            dataRows = dataRows.filter((line) => splitRow(line).some((cell) => cell.toLowerCase().includes(q)));
+          }
+          const values = dataRows.map(line => {
+            var _a;
+            const v = ((_a = splitRow(line)[colIdx]) != null ? _a : "").trim();
+            return parseFloat(v);
+          }).filter(n => !isNaN(n));
+
+          if (values.length === 0) {
+            statBadge.textContent = "";
+            return;
+          }
+
+          const mode = statModes[colIdx];
+          let result;
+          switch (mode) {
+            case "SUM": result = values.reduce((a, b) => a + b, 0); break;
+            case "AVG": result = values.reduce((a, b) => a + b, 0) / values.length; break;
+            case "MIN": result = Math.min(...values); break;
+            case "MAX": result = Math.max(...values); break;
+            default: result = 0;
+          }
+
+          statBadge.empty();
+          statBadge.createSpan({ text: mode, cls: "zibase-th-stat-mode" });
+          statBadge.createSpan({ text: " " + formatResult(result), cls: "zibase-th-stat-value" });
+        };
+
+        statBadge.addEventListener("click", (e) => {
+          e.stopPropagation(); // Don't trigger sort
+          const modes = ["SUM", "AVG", "MIN", "MAX"];
+          const current = modes.indexOf(statModes[colIdx]);
+          statModes[colIdx] = modes[(current + 1) % modes.length];
+          updateThStat();
+        });
+
+        // Store updater for re-render after sort/filter
+        th._updateStat = updateThStat;
+        updateThStat();
+      }
+
       th.addEventListener("click", () => {
         const newAsc = sortColIdx === colIdx ? !sortAsc : true;
         onSortChange(colIdx, newAsc);
@@ -690,6 +313,10 @@ var ZiBaseTableRenderer = class {
           el.classList.toggle("zibase-sort-active", i === colIdx);
         });
         renderRows();
+        // Refresh stats after sort (in case filter changed visible rows)
+        thead.querySelectorAll(".zibase-th").forEach(thEl => {
+          if (thEl._updateStat) thEl._updateStat();
+        });
       });
       th.addEventListener("contextmenu", (e) => {
         e.preventDefault();
@@ -743,43 +370,43 @@ var ZiBaseTableRenderer = class {
         const tr = tbody.createEl("tr", { cls: "zibase-row" });
         tr.draggable = true;
         tr.addEventListener("dragstart", (e) => {
-           e.dataTransfer.setData("text/row", rawIdx.toString());
-           tr.style.opacity = "0.5";
+          e.dataTransfer.setData("text/row", rawIdx.toString());
+          tr.style.opacity = "0.5";
         });
         tr.addEventListener("dragend", () => {
-           tr.style.opacity = "1";
-           tbody.querySelectorAll(".zibase-row").forEach(el => el.style.borderTop = "");
+          tr.style.opacity = "1";
+          tbody.querySelectorAll(".zibase-row").forEach(el => el.style.borderTop = "");
         });
         tr.addEventListener("dragover", (e) => {
-           e.preventDefault();
-           tr.style.borderTop = "2px solid var(--interactive-accent)";
+          e.preventDefault();
+          tr.style.borderTop = "2px solid var(--interactive-accent)";
         });
         tr.addEventListener("dragleave", () => {
-           tr.style.borderTop = "";
+          tr.style.borderTop = "";
         });
         tr.addEventListener("drop", async (e) => {
-           e.preventDefault();
-           e.stopPropagation();
-           tr.style.borderTop = "";
-           const fromIdxStr = e.dataTransfer.getData("text/row");
-           if (!fromIdxStr) return;
-           const fromIdx = parseInt(fromIdxStr, 10);
-           const toIdx = rawIdx;
-           if (fromIdx !== toIdx) {
-              const file = this.app.vault.getAbstractFileByPath(context.sourcePath);
-              if (!file) return;
-              await this.app.vault.process(file, (content) => {
-                 const allLines = content.split("\n");
-                 const fileStart = sectionInfo.lineStart + schema.dataStartIndex;
-                 const dataLines = allLines.slice(fileStart, fileStart + rawDataLines.length);
-                 const dragged = dataLines.splice(fromIdx, 1)[0];
-                 let insertIdx = toIdx;
-                 if (fromIdx < toIdx) insertIdx--;
-                 dataLines.splice(insertIdx, 0, dragged);
-                 allLines.splice(fileStart, rawDataLines.length, ...dataLines);
-                 return allLines.join("\n");
-              });
-           }
+          e.preventDefault();
+          e.stopPropagation();
+          tr.style.borderTop = "";
+          const fromIdxStr = e.dataTransfer.getData("text/row");
+          if (!fromIdxStr) return;
+          const fromIdx = parseInt(fromIdxStr, 10);
+          const toIdx = rawIdx;
+          if (fromIdx !== toIdx) {
+            const file = this.app.vault.getAbstractFileByPath(context.sourcePath);
+            if (!file) return;
+            await this.app.vault.process(file, (content) => {
+              const allLines = content.split("\n");
+              const fileStart = sectionInfo.lineStart + schema.dataStartIndex;
+              const dataLines = allLines.slice(fileStart, fileStart + rawDataLines.length);
+              const dragged = dataLines.splice(fromIdx, 1)[0];
+              let insertIdx = toIdx;
+              if (fromIdx < toIdx) insertIdx--;
+              dataLines.splice(insertIdx, 0, dragged);
+              allLines.splice(fileStart, rawDataLines.length, ...dataLines);
+              return allLines.join("\n");
+            });
+          }
         });
         schema.columns.forEach((col, colIdx) => {
           var _a2;
@@ -797,71 +424,6 @@ var ZiBaseTableRenderer = class {
       });
     };
     renderRows();
-
-    // ─── Stats Footer ───────────────────────────────────────────────────────────
-    this.buildStatsRow(tableEl, schema, getDataRows, filterQuery);
-  }
-
-  // ─── Stats Row ──────────────────────────────────────────────────────────────
-  buildStatsRow(tableEl, schema, getDataRows, filterQuery) {
-    const hasNumbers = schema.columns.some(c => c.type.kind === "number" || c.type.kind === "formula");
-    if (!hasNumbers) return;
-
-    const tfoot = tableEl.createEl("tfoot", { cls: "zibase-stats-foot" });
-    const tr = tfoot.createEl("tr", { cls: "zibase-stats-row" });
-    const statModes = {};
-
-    schema.columns.forEach((col, colIdx) => {
-      const td = tr.createEl("td", { cls: "zibase-stats-td" });
-      if (col.type.kind !== "number" && col.type.kind !== "formula") {
-        td.textContent = "—";
-        td.classList.add("zibase-stats-empty");
-        return;
-      }
-
-      if (!statModes[colIdx]) statModes[colIdx] = "SUM";
-
-      const renderStat = () => {
-        let dataRows = getDataRows();
-        if (filterQuery) {
-          const q = filterQuery.toLowerCase();
-          dataRows = dataRows.filter((line) => splitRow(line).some((cell) => cell.toLowerCase().includes(q)));
-        }
-        const values = dataRows.map(line => {
-          var _a;
-          const v = ((_a = splitRow(line)[colIdx]) != null ? _a : "").trim();
-          return parseFloat(v);
-        }).filter(n => !isNaN(n));
-
-        if (values.length === 0) {
-          td.textContent = "—";
-          return;
-        }
-
-        const mode = statModes[colIdx];
-        let result;
-        switch (mode) {
-          case "SUM": result = values.reduce((a, b) => a + b, 0); break;
-          case "AVG": result = values.reduce((a, b) => a + b, 0) / values.length; break;
-          case "MIN": result = Math.min(...values); break;
-          case "MAX": result = Math.max(...values); break;
-          default: result = 0;
-        }
-
-        td.empty();
-        const label = td.createSpan({ text: mode, cls: "zibase-stats-label" });
-        td.createSpan({ text: " " + formatResult(result), cls: "zibase-stats-value" });
-      };
-
-      td.addEventListener("click", () => {
-        const modes = ["SUM", "AVG", "MIN", "MAX"];
-        const current = modes.indexOf(statModes[colIdx]);
-        statModes[colIdx] = modes[(current + 1) % modes.length];
-        renderStat();
-      });
-      td.style.cursor = "pointer";
-      renderStat();
-    });
   }
 
   // ─── Kanban View ──────────────────────────────────────────────────────────────
@@ -959,10 +521,10 @@ var ZiBaseTableRenderer = class {
           if (!rawValue) return;
 
           if (col.type.kind === "text") {
-            // First text col = title
+            // First text col = title — render markdown for wikilinks
             if (!card.querySelector(".zibase-kanban-card-title")) {
               const titleEl = card.createDiv("zibase-kanban-card-title");
-              titleEl.textContent = rawValue;
+              import_obsidian.MarkdownRenderer.renderMarkdown(rawValue, titleEl, context.sourcePath, this.plugin);
               return;
             }
           }
@@ -988,7 +550,7 @@ var ZiBaseTableRenderer = class {
         if (!card.querySelector(".zibase-kanban-card-title")) {
           const titleEl = document.createElement("div");
           titleEl.className = "zibase-kanban-card-title";
-          titleEl.textContent = cells[0] || "—";
+          import_obsidian.MarkdownRenderer.renderMarkdown(cells[0] || "—", titleEl, context.sourcePath, this.plugin);
           card.insertBefore(titleEl, card.firstChild);
         }
       });
@@ -1016,10 +578,11 @@ var ZiBaseTableRenderer = class {
       const cells = splitRow(line);
       const card = grid.createDiv("zibase-gallery-card");
 
-      // Title — first text column
+      // Title — first text column (render markdown for wikilinks)
       const titleCol = schema.columns.find(c => c.type.kind === "text");
       const titleValue = titleCol ? (cells[titleCol.index] || "").trim() : (cells[0] || "").trim();
-      card.createDiv({ text: titleValue || "—", cls: "zibase-gallery-card-title" });
+      const titleDiv = card.createDiv({ cls: "zibase-gallery-card-title" });
+      import_obsidian.MarkdownRenderer.renderMarkdown(titleValue || "—", titleDiv, context.sourcePath, this.plugin);
 
       // Fields
       const fieldsWrap = card.createDiv("zibase-gallery-card-fields");
@@ -1145,7 +708,7 @@ var ZiBaseTableRenderer = class {
         const entries = dateMap.get(dateStr) || [];
         entries.forEach(entry => {
           const pill = cell.createDiv("zibase-calendar-entry");
-          pill.textContent = entry.title || "—";
+          import_obsidian.MarkdownRenderer.renderMarkdown(entry.title || "—", pill, context.sourcePath, this.plugin);
           if (entry.label) {
             pill.style.setProperty("--lc", getLabelColor(entry.label));
             pill.classList.add("zibase-calendar-entry-colored");
@@ -1546,20 +1109,20 @@ var ZiBaseTableRenderer = class {
           input.value = val;
           input.focus();
           if (typeof input.showPicker === "function") {
-             try { input.showPicker(); } catch(e){}
+            try { input.showPicker(); } catch (e) { }
           }
           const commit = async () => {
-             const newVal = input.value;
-             input.remove();
-             displaySpan.textContent = newVal || "\u2014";
-             displaySpan.className = newVal ? "zibase-date-rendered" : "zibase-text-empty";
-             displaySpan.style.display = "";
-             await onChange(newVal);
+            const newVal = input.value;
+            input.remove();
+            displaySpan.textContent = newVal || "\u2014";
+            displaySpan.className = newVal ? "zibase-date-rendered" : "zibase-text-empty";
+            displaySpan.style.display = "";
+            await onChange(newVal);
           };
           input.addEventListener("blur", commit);
           input.addEventListener("keydown", (e) => {
-             if (e.key === "Enter") commit();
-             if (e.key === "Escape") { input.remove(); displaySpan.style.display = ""; }
+            if (e.key === "Enter") commit();
+            if (e.key === "Escape") { input.remove(); displaySpan.style.display = ""; }
           });
         });
         break;
@@ -1959,14 +1522,12 @@ var ZIBASE_CSS = `
 .zibase-formula-col-chip { font-size: 0.78em; background: var(--background-secondary); border: 1px solid var(--background-modifier-border); border-radius: 4px; padding: 1px 6px; cursor: pointer; transition: border-color 0.15s, color 0.15s; }
 .zibase-formula-col-chip:hover { border-color: var(--interactive-accent); color: var(--interactive-accent); }
 
-/* ── Stats footer ── */
-.zibase-stats-foot { border-top: 2px solid var(--background-modifier-border); opacity: 0; transition: opacity 0.15s; }
-.zibase-wrapper:hover .zibase-stats-foot { opacity: 1; }
-.zibase-stats-row { background: var(--background-secondary-alt); }
-.zibase-stats-td { padding: 5px 14px; font-size: 0.75em; color: var(--text-muted); border-bottom: none; }
-.zibase-stats-empty { color: var(--text-faint); }
-.zibase-stats-label { font-weight: 700; font-size: 0.85em; letter-spacing: 0.05em; color: var(--interactive-accent); }
-.zibase-stats-value { color: var(--text-normal); font-weight: 500; }
+/* \u2500\u2500 Header inline stats \u2500\u2500 */
+.zibase-th-stat { display: flex; align-items: center; gap: 2px; margin-top: 3px; cursor: pointer; opacity: 0; transition: opacity 0.15s; border-radius: 3px; padding: 1px 4px; }
+.zibase-wrapper:hover .zibase-th-stat { opacity: 1; }
+.zibase-th-stat:hover { background: color-mix(in srgb, var(--interactive-accent) 10%, transparent); }
+.zibase-th-stat-mode { font-weight: 700; font-size: 0.8em; letter-spacing: 0.04em; color: var(--interactive-accent); }
+.zibase-th-stat-value { font-weight: 600; font-size: 0.8em; color: var(--text-normal); }
 
 /* ── Dropdown menu ── */
 .zibase-dropdown { position: absolute; z-index: 9999; background: var(--background-primary); border: 1px solid var(--background-modifier-border); border-radius: 8px; padding: 4px; min-width: 180px; box-shadow: 0 4px 20px rgba(0,0,0,0.15); animation: zibase-menu-in 0.1s ease; }
@@ -2092,162 +1653,3 @@ var ZIBASE_CSS = `
 .zibase-calendar-entry-colored { background: color-mix(in srgb, var(--lc, var(--interactive-accent)) 15%, transparent); color: var(--lc, var(--interactive-accent)); }
 `;
 
-
-// src/main.ts
-
-var main_exports = {};
-__export(main_exports, {
-  default: () => ZiBasePlugin
-});
-module.exports = __toCommonJS(main_exports);
-var import_obsidian2 = require("obsidian");
-
-
-var DEFAULT_SETTINGS = {
-  renderInReadingView: true,
-  inferSchema: true,
-  columnRules: [...DEFAULT_COLUMN_RULES]
-};
-var ZiBasePlugin = class extends import_obsidian2.Plugin {
-  async onload() {
-    
-    await this.loadSettings();
-    this.renderer = new ZiBaseTableRenderer(this.app, this);
-    if (this.settings.renderInReadingView) {
-      this.registerMarkdownPostProcessor((element, context) => {
-        this.renderer.processReadingView(element, context);
-      });
-    }
-    this.addCommand({
-      id: "zibase-insert-table",
-      name: "Insert ZiBase annotated table",
-      editorCallback: (editor) => {
-        const template = [
-          "| Name | Status | Priority | Tags |",
-          "|------|--------|----------|------|",
-          "| <!-- zibase: text --> | <!-- zibase: toggle --> | <!-- zibase: select:Low,Medium,High --> | <!-- zibase: label --> |",
-          "| Item 1 | true | High | biology |",
-          "| Item 2 | false | Low | chemistry |"
-        ].join("\n");
-        editor.replaceSelection(template);
-      }
-    });
-    this.addCommand({
-      id: "zibase-insert-plain-table",
-      name: "Insert plain table (auto-inferred)",
-      editorCallback: (editor) => {
-        const template = [
-          "| Name | Done | Score | Category |",
-          "|------|------|-------|----------|",
-          "| Task A | true | 90 | Work |",
-          "| Task B | false | 75 | Work |",
-          "| Task C | true | 82 | Personal |"
-        ].join("\n");
-        editor.replaceSelection(template);
-      }
-    });
-    this.addCommand({
-      id: "zibase-insert-formula-table",
-      name: "Insert table with formula column",
-      editorCallback: (editor) => {
-        const template = [
-          "| Item | Price | Qty | Total |",
-          "|------|-------|-----|-------|",
-          "| <!-- zibase: text --> | <!-- zibase: number --> | <!-- zibase: number --> | <!-- zibase: formula:Price * Qty --> |",
-          "| Pen | 10 | 5 |  |",
-          "| Book | 250 | 2 |  |",
-          "| Eraser | 5 | 10 |  |"
-        ].join("\n");
-        editor.replaceSelection(template);
-      }
-    });
-    this.addSettingTab(new ZiBaseSettingTab(this.app, this));
-    
-  }
-  onunload() {
-    
-  }
-  async loadSettings() {
-    this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
-    if (!this.settings.columnRules || this.settings.columnRules.length === 0) {
-      this.settings.columnRules = [...DEFAULT_COLUMN_RULES];
-    }
-  }
-  async saveSettings() {
-    await this.saveData(this.settings);
-  }
-};
-var ZiBaseSettingTab = class extends import_obsidian2.PluginSettingTab {
-  constructor(app, plugin) {
-    super(app, plugin);
-    this.plugin = plugin;
-  }
-  display() {
-    const { containerEl } = this;
-    containerEl.empty();
-    containerEl.createEl("h2", { text: "ZiBase \u2014 \u0BB4\u0BBF\u0BAF\u0BB2\u0BCD" });
-    containerEl.createEl("p", {
-      text: "Markdown tables as living databases.",
-      cls: "zibase-settings-desc"
-    });
-    containerEl.createEl("h3", { text: "\u2699\uFE0F General" });
-    new import_obsidian2.Setting(containerEl).setName("Render in Reading View").setDesc("Show rich UI when viewing notes in reading mode.").addToggle((t) => t.setValue(this.plugin.settings.renderInReadingView).onChange(async (v) => {
-      this.plugin.settings.renderInReadingView = v;
-      await this.plugin.saveSettings();
-    }));
-    new import_obsidian2.Setting(containerEl).setName("Auto-infer schema").setDesc("Automatically detect column types from plain markdown tables.").addToggle((t) => t.setValue(this.plugin.settings.inferSchema).onChange(async (v) => {
-      this.plugin.settings.inferSchema = v;
-      await this.plugin.saveSettings();
-    }));
-    containerEl.createEl("h3", { text: "\u{1F3F7}\uFE0F Column Name Rules" });
-    containerEl.createEl("p", {
-      text: "When a column name matches, auto-assign that type. Applied to all inferred tables.",
-      cls: "zibase-settings-desc"
-    });
-    const rulesContainer = containerEl.createDiv("zibase-rules-container");
-    this.renderRules(rulesContainer);
-    new import_obsidian2.Setting(containerEl).addButton((btn) => btn.setButtonText("+ Add rule").setCta().onClick(async () => {
-      this.plugin.settings.columnRules.push({ name: "", type: "label" });
-      await this.plugin.saveSettings();
-      this.renderRules(rulesContainer);
-    }));
-    new import_obsidian2.Setting(containerEl).setName("Reset to defaults").setDesc("Restore the original column name rules.").addButton((btn) => btn.setButtonText("Reset").setWarning().onClick(async () => {
-      this.plugin.settings.columnRules = [...DEFAULT_COLUMN_RULES];
-      await this.plugin.saveSettings();
-      this.renderRules(rulesContainer);
-    }));
-    containerEl.createEl("h3", { text: "\u2139\uFE0F About" });
-    containerEl.createEl("p", { text: "ZiBase v1.0.0 \u2014 Built by Rohith A (ZIYAL)", cls: "zibase-settings-desc" });
-    containerEl.createEl("p", { text: "Markdown-native database plugin for Obsidian.", cls: "zibase-settings-desc" });
-  }
-  renderRules(container) {
-    container.empty();
-    const TYPE_OPTIONS = ["text", "toggle", "select", "label", "number", "date", "formula"];
-    this.plugin.settings.columnRules.forEach((rule, idx) => {
-      const row = container.createDiv("zibase-rule-row");
-      const nameInput = row.createEl("input", { type: "text", cls: "zibase-rule-name", value: rule.name });
-      nameInput.placeholder = "column name";
-      nameInput.addEventListener("change", async () => {
-        this.plugin.settings.columnRules[idx].name = nameInput.value.trim();
-        await this.plugin.saveSettings();
-      });
-      row.createSpan({ text: "\u2192", cls: "zibase-rule-arrow" });
-      const typeSelect = row.createEl("select", { cls: "zibase-rule-type" });
-      TYPE_OPTIONS.forEach((t) => {
-        const opt = typeSelect.createEl("option", { text: t, value: t });
-        if (t === rule.type)
-          opt.selected = true;
-      });
-      typeSelect.addEventListener("change", async () => {
-        this.plugin.settings.columnRules[idx].type = typeSelect.value;
-        await this.plugin.saveSettings();
-      });
-      const removeBtn = row.createEl("button", { text: "\xD7", cls: "zibase-rule-remove" });
-      removeBtn.addEventListener("click", async () => {
-        this.plugin.settings.columnRules.splice(idx, 1);
-        await this.plugin.saveSettings();
-        this.renderRules(container);
-      });
-    });
-  }
-};
