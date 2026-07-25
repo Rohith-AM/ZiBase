@@ -3,7 +3,7 @@
   "name": "ZiBase",
   "version": "1.0.0",
   "minAppVersion": "1.4.0",
-  "description": "Markdown tables as living databases. Rich UI with full Obsidian markdown rendering, [[wikilinks]], Alt+Click editing, sort, filter, formula columns, Kanban/Gallery/Calendar views, export, schema inference"
+  "description": "Markdown tables as living databases — Table, Kanban, Gallery and Calendar views, inline editing, formula columns, zero extra files, pure markdown."
   "author": "Rohith A (ZIYAL)",
   "authorUrl": "https://github.com/rohith-am",
   "fundingUrl": "https://github.com/sponsors/Rohith-AM",
