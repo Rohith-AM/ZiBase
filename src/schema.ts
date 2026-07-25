@@ -1,9 +1,9 @@
 
-var ANNOTATION_RE = /<!--\s*zibase:\s*([^\s>]+(?:\s*[^\s>]+)*)\s*-->/i;
-var VIEW_ANNOTATION_RE = /<!--\s*zibase-view:\s*(\w+)(?::([^>]+))?\s*-->/i;
-var DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
-var NUMBER_RE = /^-?\d+(\.\d+)?$/;
-var DEFAULT_COLUMN_RULES = [
+let ANNOTATION_RE = /<!--\s*zibase:\s*([^\s>]+(?:\s*[^\s>]+)*)\s*-->/i;
+let VIEW_ANNOTATION_RE = /<!--\s*zibase-view:\s*(\w+)(?::([^>]+))?\s*-->/i;
+let DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+let NUMBER_RE = /^-?\d+(\.\d+)?$/;
+let DEFAULT_COLUMN_RULES = [
   { name: "domain", type: "label" },
   { name: "category", type: "label" },
   { name: "tag", type: "label" },
@@ -15,7 +15,7 @@ var DEFAULT_COLUMN_RULES = [
   { name: "completed", type: "toggle" },
   { name: "status", type: "select" }
 ];
-function parseZiBaseSchema(lines, columnRules = DEFAULT_COLUMN_RULES) {
+export function parseZiBaseSchema(lines, columnRules = DEFAULT_COLUMN_RULES) {
   if (lines.length < 2)
     return null;
   const headerCells = splitRow(lines[0]);
@@ -26,7 +26,7 @@ function parseZiBaseSchema(lines, columnRules = DEFAULT_COLUMN_RULES) {
     const hasAnnotations = schemaCells.some((c) => ANNOTATION_RE.test(c));
     if (hasAnnotations) {
       const columns2 = headerCells.map((name, i) => {
-        var _a;
+        let _a;
         const cell = (_a = schemaCells[i]) != null ? _a : "";
         const match = cell.match(ANNOTATION_RE);
         const typeStr = match ? match[1] : "text";
@@ -44,7 +44,7 @@ function parseZiBaseSchema(lines, columnRules = DEFAULT_COLUMN_RULES) {
   dataLines.forEach((line) => {
     const cells = splitRow(line);
     headerCells.forEach((_, i) => {
-      var _a;
+      let _a;
       const v = ((_a = cells[i]) != null ? _a : "").trim();
       if (v)
         colValues[i].push(v);
@@ -63,7 +63,7 @@ function parseZiBaseSchema(lines, columnRules = DEFAULT_COLUMN_RULES) {
  * Format: <!-- zibase-view: kanban:Status -->
  * Returns { view: "kanban", groupBy: "Status" } or null
  */
-function parseViewAnnotation(lines) {
+export function parseViewAnnotation(lines) {
   for (let i = 0; i < Math.min(lines.length, 3); i++) {
     const match = lines[i].match(VIEW_ANNOTATION_RE);
     if (match) {
@@ -140,13 +140,13 @@ function splitRow(row) {
   cells.push(current.trim());
   return cells;
 }
-function serializeRow(cells) {
+export function serializeRow(cells) {
   return "| " + cells.join(" | ") + " |";
 }
-function parseBool(val) {
+export function parseBool(val) {
   return val.trim().toLowerCase() === "true";
 }
-function serializeBool(val) {
+export function serializeBool(val) {
   return val ? "true" : "false";
 }
 

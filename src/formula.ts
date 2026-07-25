@@ -3,12 +3,12 @@
 // Safe math evaluator — NO eval(). Recursive descent parser.
 // Supports: +, -, *, /, %, parentheses, column references (case-insensitive)
 
-var FORMULA_NUMBER_RE = /^-?\d+(\.\d+)?$/;
+let FORMULA_NUMBER_RE = /^-?\d+(\.\d+)?$/;
 
 /**
  * Check if a raw cell value is wrapped in backticks → plain text mode
  */
-function isBackticked(raw) {
+export function isBackticked(raw) {
   const trimmed = raw.trim();
   return trimmed.startsWith('`') && trimmed.endsWith('`') && trimmed.length >= 2;
 }
@@ -16,7 +16,7 @@ function isBackticked(raw) {
 /**
  * Strip backticks from a value
  */
-function stripBackticks(raw) {
+export function stripBackticks(raw) {
   const trimmed = raw.trim();
   return trimmed.slice(1, -1);
 }
@@ -25,7 +25,7 @@ function stripBackticks(raw) {
  * Check if a raw value looks like simple inline math (e.g. "5*10", "100/4+2")
  * Must contain at least one operator and consist only of numbers/operators/parens/spaces
  */
-function isSimpleMath(raw) {
+export function isSimpleMath(raw) {
   const trimmed = raw.trim();
   if (!trimmed) return false;
   if (FORMULA_NUMBER_RE.test(trimmed)) return false; // plain number, not math
@@ -44,7 +44,7 @@ function isSimpleMath(raw) {
  * @param rowData     Map of column name → raw cell value
  * @returns           Computed number or null on error
  */
-function evaluateFormula(expression, rowData) {
+export function evaluateFormula(expression, rowData) {
   if (!expression || !expression.trim()) return null;
 
   // Replace column references with their numeric values (case-insensitive)
@@ -86,7 +86,7 @@ function evaluateFormula(expression, rowData) {
 /**
  * Evaluate a simple math expression (no column refs, just numbers and operators)
  */
-function evaluateSimpleMath(expression) {
+export function evaluateSimpleMath(expression) {
   try {
     return safeEval(expression);
   } catch (e) {
@@ -97,7 +97,7 @@ function evaluateSimpleMath(expression) {
 /**
  * Format a computed result for display
  */
-function formatResult(value) {
+export function formatResult(value) {
   if (value === null || value === undefined || isNaN(value)) return '—';
   if (!isFinite(value)) return '∞';
   // Clean up floating point: show up to 6 decimal places, strip trailing zeros

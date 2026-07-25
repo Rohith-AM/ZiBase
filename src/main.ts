@@ -1,18 +1,18 @@
 
-var main_exports = {};
+let main_exports = {};
 __export(main_exports, {
   default: () => ZiBasePlugin
 });
 module.exports = __toCommonJS(main_exports);
-var import_obsidian2 = require("obsidian");
+import * as import_obsidian2 from "obsidian";
 
 
-var DEFAULT_SETTINGS = {
+let DEFAULT_SETTINGS = {
   renderInReadingView: true,
   inferSchema: true,
   columnRules: [...DEFAULT_COLUMN_RULES]
 };
-var ZiBasePlugin = class extends import_obsidian2.Plugin {
+let ZiBasePlugin = class extends import_obsidian2.Plugin {
   async onload() {
     console.log("ZiBase v1.0.0 loaded \u2014 \u0BB4\u0BBF\u0BAF\u0BB2\u0BCD");
     await this.loadSettings();
@@ -23,8 +23,8 @@ var ZiBasePlugin = class extends import_obsidian2.Plugin {
       });
     }
     this.addCommand({
-      id: "zibase-insert-table",
-      name: "Insert ZiBase annotated table",
+      id: "insert-table",
+      name: "Insert annotated table",
       editorCallback: (editor) => {
         const template = [
           "| Name | Status | Priority | Tags |",
@@ -37,7 +37,7 @@ var ZiBasePlugin = class extends import_obsidian2.Plugin {
       }
     });
     this.addCommand({
-      id: "zibase-insert-plain-table",
+      id: "insert-plain-table",
       name: "Insert plain table (auto-inferred)",
       editorCallback: (editor) => {
         const template = [
@@ -51,7 +51,7 @@ var ZiBasePlugin = class extends import_obsidian2.Plugin {
       }
     });
     this.addCommand({
-      id: "zibase-insert-formula-table",
+      id: "insert-formula-table",
       name: "Insert table with formula column",
       editorCallback: (editor) => {
         const template = [
@@ -66,10 +66,10 @@ var ZiBasePlugin = class extends import_obsidian2.Plugin {
       }
     });
     this.addSettingTab(new ZiBaseSettingTab(this.app, this));
-    console.log("ZiBase v1.0.0 ready.");
+    
   }
   onunload() {
-    console.log("ZiBase unloaded.");
+    
   }
   async loadSettings() {
     this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
@@ -81,7 +81,7 @@ var ZiBasePlugin = class extends import_obsidian2.Plugin {
     await this.saveData(this.settings);
   }
 };
-var ZiBaseSettingTab = class extends import_obsidian2.PluginSettingTab {
+let ZiBaseSettingTab = class extends import_obsidian2.PluginSettingTab {
   constructor(app, plugin) {
     super(app, plugin);
     this.plugin = plugin;

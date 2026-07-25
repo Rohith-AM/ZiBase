@@ -1,8 +1,8 @@
 
-var import_obsidian = require("obsidian");
+import * as import_obsidian from "obsidian";
 
 
-var LABEL_COLORS = [
+let LABEL_COLORS = [
   "#4ade80",
   "#60a5fa",
   "#f472b6",
@@ -35,7 +35,7 @@ function hashStr(str) {
 function getLabelColor(value) {
   return LABEL_COLORS[hashStr(value.trim().toLowerCase()) % LABEL_COLORS.length];
 }
-var SelectOptionsModal = class extends import_obsidian.Modal {
+let SelectOptionsModal = class extends import_obsidian.Modal {
   constructor(app, colName, currentOptions, onSubmit) {
     super(app);
     this.colName = colName;
@@ -90,13 +90,13 @@ var SelectOptionsModal = class extends import_obsidian.Modal {
         this.close();
       }
     });
-    setTimeout(() => input.focus(), 50);
+    window.setTimeout(() => input.focus(), 50);
   }
   onClose() {
     this.contentEl.empty();
   }
 };
-var ZiBaseTableRenderer = class {
+export let ZiBaseTableRenderer = class {
   constructor(app, plugin) {
     this._stylesInjected = false;
     this.app = app;
@@ -117,7 +117,7 @@ var ZiBaseTableRenderer = class {
   }
   buildRichTable(schema, lines, context, sectionInfo) {
     if (!schema)
-      return document.createElement("div");
+      return createDiv();
     let currentView = "table";
     let collapsed = false, filterQuery = "", sortColIdx = null, sortAsc = true;
     const rawDataLines = lines.slice(schema.dataStartIndex);
@@ -129,11 +129,11 @@ var ZiBaseTableRenderer = class {
     }
 
     const getDataRows = () => rawDataLines.filter((l) => l.trim() && l.includes("|") && !/<!--\s*zibase:/.test(l) && !/<!--\s*zibase-view:/.test(l));
-    const wrapper = document.createElement("div");
+    const wrapper = createDiv();
     wrapper.className = "zibase-wrapper";
     const topbar = wrapper.createDiv("zibase-topbar");
     const collapseBtn = topbar.createEl("button", { cls: "zibase-collapse-btn" });
-    collapseBtn.innerHTML = `<svg width="9" height="9" viewBox="0 0 9 9"><path d="M1.5 1.5 L7.5 4.5 L1.5 7.5 Z" fill="currentColor"/></svg>`;
+    collapseBtn.empty(); collapseBtn.insertAdjacentHTML("beforeend", `<svg width="9" height="9" viewBox="0 0 9 9"><path d="M1.5 1.5 L7.5 4.5 L1.5 7.5 Z" fill="currentColor"/></svg>`);
     const topLeft = topbar.createDiv("zibase-topbar-left");
     topLeft.createSpan({ text: "\u27C1", cls: "zibase-logo" });
     const zibaseName = topLeft.createSpan({ text: "ZiBase", cls: "zibase-name zibase-name-btn" });
@@ -143,7 +143,7 @@ var ZiBaseTableRenderer = class {
     });
     const topRight = topbar.createDiv("zibase-topbar-right");
     const searchWrap = topRight.createDiv("zibase-search-wrap");
-    searchWrap.innerHTML = `<svg class="zibase-search-icon" width="11" height="11" viewBox="0 0 16 16"><circle cx="6.5" cy="6.5" r="5" stroke="currentColor" stroke-width="1.5" fill="none"/><line x1="10.5" y1="10.5" x2="14" y2="14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>`;
+    searchWrap.empty(); searchWrap.insertAdjacentHTML("beforeend", `<svg class="zibase-search-icon" width="11" height="11" viewBox="0 0 16 16"><circle cx="6.5" cy="6.5" r="5" stroke="currentColor" stroke-width="1.5" fill="none"/><line x1="10.5" y1="10.5" x2="14" y2="14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>`);
     const searchInput = searchWrap.createEl("input", { cls: "zibase-search", type: "text" });
     searchInput.placeholder = "Filter\u2026";
     zibaseName.addEventListener("click", (e) => {
@@ -158,7 +158,7 @@ var ZiBaseTableRenderer = class {
     // Create footer FIRST so it stays at the bottom after re-renders
     const footer = body.createDiv("zibase-footer");
     const addRowBtn = footer.createEl("button", { cls: "zibase-add-row-btn" });
-    addRowBtn.innerHTML = `<svg width="10" height="10" viewBox="0 0 10 10"><line x1="5" y1="1" x2="5" y2="9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><line x1="1" y1="5" x2="9" y2="5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg> Add row`;
+    addRowBtn.empty(); addRowBtn.insertAdjacentHTML("beforeend", `<svg width="10" height="10" viewBox="0 0 10 10"><line x1="5" y1="1" x2="5" y2="9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><line x1="1" y1="5" x2="9" y2="5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg> Add row`);
     addRowBtn.addEventListener("click", async () => await this.addRow(context, sectionInfo, schema));
     const rowCount = footer.createSpan({ cls: "zibase-row-count" });
     const updateCount = () => {
@@ -172,7 +172,7 @@ var ZiBaseTableRenderer = class {
       body.querySelectorAll(".zibase-table, .zibase-kanban, .zibase-gallery, .zibase-calendar").forEach(el => el.remove());
 
       // Create a container for the view content, inserted BEFORE footer
-      const viewContainer = document.createElement("div");
+      const viewContainer = createDiv();
       switch (currentView) {
         case "kanban":
           this.buildKanbanView(viewContainer, schema, getDataRows, rawDataLines, context, sectionInfo, filterQuery);
@@ -217,17 +217,17 @@ var ZiBaseTableRenderer = class {
     const tableEl = body.createEl("table", { cls: "zibase-table" });
     const thead = tableEl.createEl("thead");
     const headerRow = thead.createEl("tr");
-    var statModes = {};
+    let statModes = {};
     schema.columns.forEach((col, colIdx) => {
       const th = headerRow.createEl("th", { cls: "zibase-th" });
       th.draggable = true;
       th.addEventListener("dragstart", (e) => { e.stopPropagation(); e.dataTransfer.setData("text/col", colIdx.toString()); });
-      th.addEventListener("dragover", (e) => { e.preventDefault(); th.style.borderLeft = "2px solid var(--interactive-accent)"; });
-      th.addEventListener("dragleave", () => { th.style.borderLeft = ""; });
-      th.addEventListener("dragend", () => { thead.querySelectorAll(".zibase-th").forEach(el => el.style.borderLeft = ""); });
+      th.addEventListener("dragover", (e) => { e.preventDefault(); th.setCssStyles({ borderLeft: "2px solid var(--interactive-accent)" }); });
+      th.addEventListener("dragleave", () => { th.setCssStyles({ borderLeft: "" }); });
+      th.addEventListener("dragend", () => { thead.querySelectorAll(".zibase-th").forEach(el => el.setCssStyles({ borderLeft: "") }); });
       th.addEventListener("drop", async (e) => {
         e.preventDefault(); e.stopPropagation();
-        th.style.borderLeft = "";
+        th.setCssStyles({ borderLeft: "" });
         const fromColStr = e.dataTransfer.getData("text/col");
         if (!fromColStr) return;
         const fromColIdx = parseInt(fromColStr, 10);
@@ -267,7 +267,7 @@ var ZiBaseTableRenderer = class {
             dataRows = dataRows.filter((line) => splitRow(line).some((cell) => cell.toLowerCase().includes(q)));
           }
           const values = dataRows.map(line => {
-            var _a;
+            let _a;
             const v = ((_a = splitRow(line)[colIdx]) != null ? _a : "").trim();
             return parseFloat(v);
           }).filter(n => !isNaN(n));
@@ -325,10 +325,10 @@ var ZiBaseTableRenderer = class {
     });
     const tbody = tableEl.createEl("tbody");
     // We need lines for showTypeMenu — store reference via closure
-    var lines_unused = [];
+    let lines_unused = [];
 
     const renderRows = () => {
-      var _a, _b;
+      let _a, _b;
       tbody.empty();
       let dataRows = getDataRows();
       if (filterQuery) {
@@ -339,7 +339,7 @@ var ZiBaseTableRenderer = class {
         const idx = sortColIdx;
         const colType = (_b = (_a = schema.columns[idx]) == null ? void 0 : _a.type.kind) != null ? _b : "text";
         dataRows = [...dataRows].sort((a, b) => {
-          var _a2, _b2;
+          let _a2, _b2;
           const av = ((_a2 = splitRow(a)[idx]) != null ? _a2 : "").trim(), bv = ((_b2 = splitRow(b)[idx]) != null ? _b2 : "").trim();
           if (colType === "number" || colType === "formula") {
             const na = parseFloat(av), nb = parseFloat(bv);
@@ -371,23 +371,23 @@ var ZiBaseTableRenderer = class {
         tr.draggable = true;
         tr.addEventListener("dragstart", (e) => {
           e.dataTransfer.setData("text/row", rawIdx.toString());
-          tr.style.opacity = "0.5";
+          tr.setCssStyles({ opacity: "0.5" });
         });
         tr.addEventListener("dragend", () => {
-          tr.style.opacity = "1";
-          tbody.querySelectorAll(".zibase-row").forEach(el => el.style.borderTop = "");
+          tr.setCssStyles({ opacity: "1" });
+          tbody.querySelectorAll(".zibase-row").forEach(el => el.setCssStyles({ borderTop: "") });
         });
         tr.addEventListener("dragover", (e) => {
           e.preventDefault();
-          tr.style.borderTop = "2px solid var(--interactive-accent)";
+          tr.setCssStyles({ borderTop: "2px solid var(--interactive-accent)" });
         });
         tr.addEventListener("dragleave", () => {
-          tr.style.borderTop = "";
+          tr.setCssStyles({ borderTop: "" });
         });
         tr.addEventListener("drop", async (e) => {
           e.preventDefault();
           e.stopPropagation();
-          tr.style.borderTop = "";
+          tr.setCssStyles({ borderTop: "" });
           const fromIdxStr = e.dataTransfer.getData("text/row");
           if (!fromIdxStr) return;
           const fromIdx = parseInt(fromIdxStr, 10);
@@ -409,7 +409,7 @@ var ZiBaseTableRenderer = class {
           }
         });
         schema.columns.forEach((col, colIdx) => {
-          var _a2;
+          let _a2;
           const td = tr.createEl("td", { cls: "zibase-td" });
           const rawValue = (_a2 = cells[colIdx]) != null ? _a2 : "";
           this.renderCell(td, col, rawValue, context, schema, cells, async (newValue) => {
@@ -446,7 +446,7 @@ var ZiBaseTableRenderer = class {
     // Gather unique group values
     const groups = new Map();
     dataRows.forEach(line => {
-      var _a;
+      let _a;
       const cells = splitRow(line);
       const groupValue = ((_a = cells[groupCol.index]) != null ? _a : "").trim() || "—";
       if (!groups.has(groupValue)) groups.set(groupValue, []);
@@ -476,7 +476,7 @@ var ZiBaseTableRenderer = class {
       const header = lane.createDiv("zibase-kanban-lane-header");
       header.style.setProperty("--lane-color", color);
       const headerLabel = header.createSpan({ text: groupValue, cls: "zibase-kanban-lane-title" });
-      headerLabel.style.color = color;
+      headerLabel.setCssStyles({ color: color });
       header.createSpan({ text: `${items.length}`, cls: "zibase-kanban-lane-count" });
 
       // Lane body (droppable)
@@ -516,7 +516,7 @@ var ZiBaseTableRenderer = class {
         // Card content — first text column as title, others as fields
         schema.columns.forEach((col, colIdx) => {
           if (colIdx === groupCol.index) return; // skip group column
-          var _a;
+          let _a;
           const rawValue = ((_a = cells[colIdx]) != null ? _a : "").trim();
           if (!rawValue) return;
 
@@ -530,7 +530,7 @@ var ZiBaseTableRenderer = class {
           }
 
           const field = card.createDiv("zibase-kanban-card-field");
-          const fieldLabel = field.createSpan({ text: col.name, cls: "zibase-kanban-field-label" });
+          field.createSpan({ text: col.name, cls: "zibase-kanban-field-label" });
 
           if (col.type.kind === "label") {
             const chip = field.createSpan({ text: rawValue, cls: "zibase-label zibase-kanban-label" });
@@ -548,7 +548,7 @@ var ZiBaseTableRenderer = class {
 
         // If no title was found, use the first cell
         if (!card.querySelector(".zibase-kanban-card-title")) {
-          const titleEl = document.createElement("div");
+          const titleEl = createDiv();
           titleEl.className = "zibase-kanban-card-title";
           import_obsidian.MarkdownRenderer.renderMarkdown(cells[0] || "—", titleEl, context.sourcePath, this.plugin);
           card.insertBefore(titleEl, card.firstChild);
@@ -589,7 +589,7 @@ var ZiBaseTableRenderer = class {
       schema.columns.forEach((col, colIdx) => {
         // Skip title column
         if (titleCol && colIdx === titleCol.index) return;
-        var _a;
+        let _a;
         const rawValue = ((_a = cells[colIdx]) != null ? _a : "").trim();
         if (!rawValue && col.type.kind !== "toggle") return;
 
@@ -703,7 +703,7 @@ var ZiBaseTableRenderer = class {
         const cell = grid.createDiv("zibase-calendar-cell");
         if (dateStr === todayStr) cell.classList.add("zibase-calendar-today");
 
-        const dayNum = cell.createSpan({ text: String(d), cls: "zibase-calendar-day-num" });
+        cell.createSpan({ text: String(d), cls: "zibase-calendar-day-num" });
 
         const entries = dateMap.get(dateStr) || [];
         entries.forEach(entry => {
@@ -741,12 +741,12 @@ var ZiBaseTableRenderer = class {
   // ─── ZiBase dropdown menu ──────────────────────────────────────────────────
   showZiBaseMenu(e, schema, lines, context, sectionInfo, rawDataLines, badge, wrapper, currentView, onViewChange) {
     document.querySelectorAll(".zibase-dropdown").forEach((m) => m.remove());
-    const menu = document.createElement("div");
+    const menu = createDiv();
     menu.className = "zibase-dropdown";
     const target = e.target;
     const rect = target.getBoundingClientRect();
-    menu.style.top = `${rect.bottom + window.scrollY + 4}px`;
-    menu.style.left = `${rect.left + window.scrollX}px`;
+    menu.setCssStyles({ top: `${rect.bottom + window.scrollY + 4}px` });
+    menu.setCssStyles({ left: `${rect.left + window.scrollX}px` });
     const controller = new AbortController();
     const closeMenu = () => {
       menu.remove();
@@ -820,7 +820,7 @@ var ZiBaseTableRenderer = class {
       this.app.setting.openTabById("zibase");
     });
     document.body.appendChild(menu);
-    setTimeout(() => {
+    window.setTimeout(() => {
       document.addEventListener("click", (ev) => {
         if (!menu.contains(ev.target))
           closeMenu();
@@ -902,7 +902,7 @@ var ZiBaseTableRenderer = class {
     const rows = dataRows.map((line) => {
       const cells = splitRow(line);
       return "| " + schema.columns.map((_, i) => {
-        var _a;
+        let _a;
         return (_a = cells[i]) != null ? _a : "";
       }).join(" | ") + " |";
     });
@@ -917,7 +917,7 @@ var ZiBaseTableRenderer = class {
     const rows = dataRows.map((line) => {
       const cells = splitRow(line);
       return schema.columns.map((_, i) => {
-        var _a;
+        let _a;
         return escape(((_a = cells[i]) != null ? _a : "").trim());
       }).join(",");
     });
@@ -932,7 +932,7 @@ var ZiBaseTableRenderer = class {
       const cells = splitRow(line);
       const obj = {};
       schema.columns.forEach((col, i) => {
-        var _a;
+        let _a;
         const raw = ((_a = cells[i]) != null ? _a : "").trim();
         if (col.type.kind === "toggle")
           obj[col.name] = parseBool(raw);
@@ -949,7 +949,7 @@ var ZiBaseTableRenderer = class {
     this.showToast("\u{1F5C4}\uFE0F Exported as JSON!");
   }
   async saveFile(filename, content, context) {
-    var _a, _b, _c;
+    let _a, _b, _c;
     const file = this.app.vault.getAbstractFileByPath(context.sourcePath);
     if (!file)
       return;
@@ -963,25 +963,25 @@ var ZiBaseTableRenderer = class {
       await this.app.vault.create(fullPath, content);
   }
   showToast(message) {
-    const toast = document.createElement("div");
+    const toast = createDiv();
     toast.className = "zibase-toast";
     toast.textContent = message;
     document.body.appendChild(toast);
-    setTimeout(() => toast.classList.add("zibase-toast-show"), 10);
-    setTimeout(() => {
+    window.setTimeout(() => toast.classList.add("zibase-toast-show"), 10);
+    window.setTimeout(() => {
       toast.classList.remove("zibase-toast-show");
-      setTimeout(() => toast.remove(), 300);
+      window.setTimeout(() => toast.remove(), 300);
     }, 2500);
   }
   // ─── Right-click type menu ─────────────────────────────────────────────────
   showTypeMenu(e, colIdx, schema, context, sectionInfo, lines, rawDataLines, badge) {
-    var _a, _b;
+    let _a, _b;
     document.querySelectorAll(".zibase-context-menu").forEach((m) => m.remove());
-    const menu = document.createElement("div");
+    const menu = createDiv();
     menu.className = "zibase-context-menu";
     const x = Math.min(e.clientX, window.innerWidth - 160);
-    menu.style.top = `${e.clientY + window.scrollY}px`;
-    menu.style.left = `${x}px`;
+    menu.setCssStyles({ top: `${e.clientY + window.scrollY}px` });
+    menu.setCssStyles({ left: `${x}px` });
     const types = [
       { label: "Text", icon: "T", kind: "text" },
       { label: "Toggle", icon: "\u2B1C", kind: "toggle" },
@@ -998,14 +998,14 @@ var ZiBaseTableRenderer = class {
       controller.abort();
     };
     types.forEach(({ label, icon, kind }) => {
-      var _a2;
+      let _a2;
       const item = menu.createDiv("zibase-menu-item");
       item.createSpan({ text: icon, cls: "zibase-menu-icon" });
       item.createSpan({ text: label, cls: "zibase-menu-label" });
       if (((_a2 = schema.columns[colIdx]) == null ? void 0 : _a2.type.kind) === kind)
         item.classList.add("zibase-menu-active");
       item.addEventListener("click", async () => {
-        var _a3, _b2, _c;
+        let _a3, _b2, _c;
         closeMenu();
         if (kind === "select") {
           const currentOpts = ((_a3 = schema.columns[colIdx]) == null ? void 0 : _a3.type.kind) === "select" ? schema.columns[colIdx].type.options : [];
@@ -1025,7 +1025,7 @@ var ZiBaseTableRenderer = class {
       });
     });
     document.body.appendChild(menu);
-    setTimeout(() => {
+    window.setTimeout(() => {
       document.addEventListener("click", (ev) => {
         if (!menu.contains(ev.target))
           closeMenu();
@@ -1045,7 +1045,7 @@ var ZiBaseTableRenderer = class {
           return ` <!-- zibase: ${col.type.kind} --> `;
         });
         allLines.splice(sectionInfo.lineStart + 2, 0, "| " + annotationCells.join(" | ") + " |");
-        setTimeout(() => {
+        window.setTimeout(() => {
           badge.textContent = "annotated";
           badge.className = "zibase-annotated-badge";
         }, 50);
@@ -1094,8 +1094,8 @@ var ZiBaseTableRenderer = class {
         input.value = rawValue.trim();
         let debounce;
         input.addEventListener("input", () => {
-          clearTimeout(debounce);
-          debounce = setTimeout(async () => await onChange(input.value), 400);
+          window.clearTimeout(debounce);
+          debounce = window.setTimeout(async () => await onChange(input.value), 400);
         });
         break;
       }
@@ -1104,25 +1104,25 @@ var ZiBaseTableRenderer = class {
         const displaySpan = td.createSpan({ text: val || "\u2014", cls: val ? "zibase-date-rendered" : "zibase-text-empty" });
         td.addEventListener("click", () => {
           if (td.querySelector("input")) return;
-          displaySpan.style.display = "none";
+          displaySpan.setCssStyles({ display: "none" });
           const input = td.createEl("input", { type: "date", cls: "zibase-date" });
           input.value = val;
           input.focus();
           if (typeof input.showPicker === "function") {
-            try { input.showPicker(); } catch (e) { }
+            try { input.showPicker(); } catch (_e) { /* ignored */ }
           }
           const commit = async () => {
             const newVal = input.value;
             input.remove();
             displaySpan.textContent = newVal || "\u2014";
             displaySpan.className = newVal ? "zibase-date-rendered" : "zibase-text-empty";
-            displaySpan.style.display = "";
+            displaySpan.setCssStyles({ display: "" });
             await onChange(newVal);
           };
           input.addEventListener("blur", commit);
           input.addEventListener("keydown", (e) => {
             if (e.key === "Enter") commit();
-            if (e.key === "Escape") { input.remove(); displaySpan.style.display = ""; }
+            if (e.key === "Escape") { input.remove(); displaySpan.setCssStyles({ display: "" }); }
           });
         });
         break;
@@ -1134,14 +1134,14 @@ var ZiBaseTableRenderer = class {
         // Check for backtick mode → show as plain text
         if (isBackticked(val)) {
           const plainText = stripBackticks(val);
-          const span = td.createSpan({ text: plainText, cls: "zibase-formula-source" });
+          td.createSpan({ text: plainText, cls: "zibase-formula-source" });
           break;
         }
 
         // Check if cell has raw math (e.g., "5*10") → auto compute
         if (isSimpleMath(val)) {
           const result = evaluateSimpleMath(val);
-          const span = td.createSpan({ text: formatResult(result), cls: "zibase-formula-result" });
+          td.createSpan({ text: formatResult(result), cls: "zibase-formula-result" });
           span.title = val; // tooltip shows the expression
           break;
         }
@@ -1151,12 +1151,12 @@ var ZiBaseTableRenderer = class {
           // Build row data map (case-insensitive keys)
           const rowData = {};
           schema.columns.forEach((c, i) => {
-            var _a;
+            let _a;
             rowData[c.name] = ((_a = rowCells[i]) != null ? _a : "").trim();
           });
           const result = evaluateFormula(col.type.expression, rowData);
           const displayVal = formatResult(result);
-          const span = td.createSpan({ text: displayVal, cls: "zibase-formula-result" });
+          td.createSpan({ text: displayVal, cls: "zibase-formula-result" });
           span.title = `ƒ ${col.type.expression} = ${displayVal}`;
         } else {
           // No expression defined — show raw value or placeholder
@@ -1171,7 +1171,7 @@ var ZiBaseTableRenderer = class {
         // Check for inline math in text cells too
         if (isSimpleMath(val)) {
           const result = evaluateSimpleMath(val);
-          const span = td.createSpan({ text: formatResult(result), cls: "zibase-formula-result zibase-text-rendered" });
+          td.createSpan({ text: formatResult(result), cls: "zibase-formula-result zibase-text-rendered" });
           span.title = val;
           // Still allow editing
           td.addEventListener("click", (e) => {
@@ -1198,7 +1198,7 @@ var ZiBaseTableRenderer = class {
         if (val) {
           import_obsidian.MarkdownRenderer.renderMarkdown(val, displaySpan, context.sourcePath, this.plugin).then(() => {
             displaySpan.querySelectorAll("a").forEach((a) => attachLinkTooltip(a));
-            const hasLinks = displaySpan.querySelectorAll("a").length > 0;
+            displaySpan.querySelectorAll("a").length > 0;
             td.addEventListener("click", (e) => {
               // Alt+Click → always enter edit mode (even on links)
               if (e.altKey) {
@@ -1221,7 +1221,7 @@ var ZiBaseTableRenderer = class {
           displaySpan.textContent = "\u2014";
           displaySpan.classList.add("zibase-text-empty");
           td.addEventListener("click", (e) => {
-            var _a, _b;
+            let _a, _b;
             e.preventDefault();
             e.stopPropagation();
             if (e.altKey || !e.target) {
@@ -1270,7 +1270,7 @@ var ZiBaseTableRenderer = class {
     displaySpan.empty();
     if (newRaw) {
       await import_obsidian.MarkdownRenderer.renderMarkdown(newRaw, displaySpan, context.sourcePath, this.plugin);
-      setTimeout(() => {
+      window.setTimeout(() => {
         displaySpan.querySelectorAll("a").forEach((a) => attachLinkTooltip(a));
       }, 50);
       displaySpan.classList.remove("zibase-text-empty");
@@ -1281,21 +1281,11 @@ var ZiBaseTableRenderer = class {
   }
   toggleTableAtCursor(editor, view) {
   }
-  injectStyles() {
-    if (this._stylesInjected)
-      return;
-    this._stylesInjected = true;
-    const existing = document.getElementById("zibase-styles-v6");
-    if (existing) existing.remove();
-    const style = document.createElement("style");
-    style.id = "zibase-styles-v6";
-    style.textContent = ZIBASE_CSS;
-    document.head.appendChild(style);
-  }
+  
 };
 
 // ─── Formula Input Modal ────────────────────────────────────────────────────
-var FormulaInputModal = class extends import_obsidian.Modal {
+let FormulaInputModal = class extends import_obsidian.Modal {
   constructor(app, colName, currentExpr, columns, onSubmit) {
     super(app);
     this.colName = colName;
@@ -1329,8 +1319,8 @@ var FormulaInputModal = class extends import_obsidian.Modal {
     const input = contentEl.createEl("input", { type: "text", cls: "zibase-modal-input" });
     input.value = this.currentExpr;
     input.placeholder = "e.g., Price * Qty";
-    input.style.marginTop = "8px";
-    input.style.marginBottom = "12px";
+    input.setCssStyles({ marginTop: "8px" });
+    input.setCssStyles({ marginBottom: "12px" });
 
     const applyBtn = contentEl.createEl("button", { text: "Apply", cls: "zibase-modal-apply-btn" });
     applyBtn.addEventListener("click", () => {
@@ -1353,7 +1343,7 @@ var FormulaInputModal = class extends import_obsidian.Modal {
       if (e.key === "Escape") this.close();
     });
 
-    setTimeout(() => { input.focus(); input.select(); }, 50);
+    window.setTimeout(() => { input.focus(); input.select(); }, 50);
   }
   onClose() {
     this.contentEl.empty();
@@ -1365,8 +1355,8 @@ function startMarkdownEdit(td, rawValue, context, renderer, onChange) {
     return;
   const displaySpan = td.querySelector(".zibase-text-rendered");
   if (displaySpan)
-    displaySpan.style.display = "none";
-  const input = document.createElement("input");
+    displaySpan.setCssStyles({ display: "none" });
+  const input = createEl("input");
   input.className = "zibase-inline-input";
   input.value = rawValue;
   td.appendChild(input);
@@ -1376,7 +1366,7 @@ function startMarkdownEdit(td, rawValue, context, renderer, onChange) {
     const newVal = input.value;
     input.remove();
     if (displaySpan)
-      displaySpan.style.display = "";
+      displaySpan.setCssStyles({ display: "" });
     await onChange(newVal);
     await renderer.rerenderTextCell(td, newVal, context);
   };
@@ -1389,20 +1379,20 @@ function startMarkdownEdit(td, rawValue, context, renderer, onChange) {
     if (e.key === "Escape") {
       input.remove();
       if (displaySpan)
-        displaySpan.style.display = "";
+        displaySpan.setCssStyles({ display: "" });
     }
   });
 }
 function attachLinkTooltip(a) {
   let tooltip = null;
   a.addEventListener("mouseenter", () => {
-    tooltip = document.createElement("div");
+    tooltip = createDiv();
     tooltip.className = "zibase-link-tooltip";
     tooltip.textContent = "Alt+Click to edit";
     document.body.appendChild(tooltip);
     const rect = a.getBoundingClientRect();
-    tooltip.style.top = `${rect.bottom + window.scrollY + 4}px`;
-    tooltip.style.left = `${rect.left + window.scrollX}px`;
+    tooltip.setCssStyles({ top: `${rect.bottom + window.scrollY + 4}px` });
+    tooltip.setCssStyles({ left: `${rect.left + window.scrollX}px` });
   });
   a.addEventListener("mouseleave", () => {
     tooltip == null ? void 0 : tooltip.remove();
@@ -1410,7 +1400,7 @@ function attachLinkTooltip(a) {
   });
 }
 function startLabelEdit(chip, current, onChange) {
-  const input = document.createElement("input");
+  const input = createEl("input");
   input.className = "zibase-inline-input";
   input.value = current;
   chip.replaceWith(input);
@@ -1449,207 +1439,5 @@ function getTypeIcon(type) {
       return "T";
   }
 }
-var ZIBASE_CSS = `
-/* ── ZiBase v1.0.0 ── */
-.zibase-wrapper { border: 1px solid var(--background-modifier-border); border-radius: 10px; overflow: hidden; margin: 1.2em 0; font-size: 0.88em; background: var(--background-primary); transition: box-shadow 0.2s; }
-.zibase-wrapper:hover { box-shadow: 0 2px 14px rgba(0,0,0,0.08); }
-.zibase-topbar { display: flex; align-items: center; gap: 8px; padding: 6px 12px; background: var(--background-secondary); border-bottom: 1px solid var(--background-modifier-border); user-select: none; }
-.zibase-collapse-btn { background: none; border: none; cursor: pointer; color: var(--text-muted); padding: 2px 3px; border-radius: 4px; display: flex; align-items: center; transition: color 0.15s, background 0.15s; flex-shrink: 0; }
-.zibase-collapse-btn svg { transition: transform 0.2s; }
-.zibase-collapse-btn.zibase-collapsed svg { transform: rotate(-90deg); }
-.zibase-collapse-btn:hover { color: var(--text-normal); background: var(--background-modifier-hover); }
-.zibase-topbar-left { display: flex; align-items: center; gap: 6px; flex: 1; }
-.zibase-logo { font-size: 1em; color: var(--interactive-accent); }
-.zibase-name { font-size: 0.72em; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-muted); }
-.zibase-name-btn { cursor: pointer; border-radius: 3px; padding: 1px 4px; transition: color 0.15s, background 0.15s; }
-.zibase-name-btn:hover { color: var(--interactive-accent); background: color-mix(in srgb, var(--interactive-accent) 10%, transparent); }
-.zibase-inferred-badge { font-size: 0.65em; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--interactive-accent); background: color-mix(in srgb, var(--interactive-accent) 12%, transparent); border: 1px solid color-mix(in srgb, var(--interactive-accent) 30%, transparent); border-radius: 999px; padding: 1px 7px; }
-.zibase-annotated-badge { font-size: 0.65em; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: #4ade80; background: color-mix(in srgb, #4ade80 12%, transparent); border: 1px solid color-mix(in srgb, #4ade80 30%, transparent); border-radius: 999px; padding: 1px 7px; }
-.zibase-topbar-right { display: flex; align-items: center; }
-.zibase-search-wrap { display: flex; align-items: center; gap: 5px; background: var(--background-modifier-form-field); border: 1px solid var(--background-modifier-border); border-radius: 6px; padding: 3px 8px; opacity: 0; pointer-events: none; transition: opacity 0.15s; width: 130px; }
-.zibase-wrapper:hover .zibase-search-wrap { opacity: 1; pointer-events: all; }
-.zibase-search-icon { color: var(--text-muted); flex-shrink: 0; }
-.zibase-search { background: none; border: none; outline: none; color: var(--text-normal); font-size: 0.82em; width: 100%; padding: 0; }
-.zibase-search::placeholder { color: var(--text-faint); }
-.zibase-body { overflow-x: auto; transition: max-height 0.25s ease, opacity 0.2s; max-height: 4000px; opacity: 1; }
-.zibase-body-collapsed { max-height: 0 !important; opacity: 0; overflow: hidden; }
-.zibase-table { width: 100%; border-collapse: collapse; background: var(--background-primary); }
-.zibase-th { padding: 8px 14px; text-align: left; font-size: 0.78em; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; color: var(--text-muted); background: var(--background-secondary-alt); border-bottom: 1px solid var(--background-modifier-border); white-space: nowrap; cursor: pointer; user-select: none; position: relative; }
-.zibase-th:hover { background: var(--background-modifier-hover); }
-.zibase-th-inner { display: flex; align-items: center; gap: 5px; }
-.zibase-th-name { flex: 1; }
-.zibase-type-icon { opacity: 0.4; font-size: 0.85em; }
-.zibase-sort-arrow { font-size: 0.85em; opacity: 0; transition: opacity 0.15s; color: var(--text-faint); }
-.zibase-th:hover .zibase-sort-arrow, .zibase-sort-arrow.zibase-sort-active { opacity: 1; }
-.zibase-sort-arrow.zibase-sort-active { color: var(--interactive-accent); }
-.zibase-td { padding: 7px 14px; border-bottom: 1px solid var(--background-modifier-border-hover); vertical-align: middle; }
-.zibase-table tr:last-child td { border-bottom: none; }
-.zibase-row:hover td { background: var(--background-modifier-hover); }
-.zibase-empty { text-align: center; color: var(--text-faint); font-style: italic; padding: 20px; font-size: 0.88em; }
-.zibase-toggle-label { display: flex; align-items: center; cursor: pointer; }
-.zibase-toggle-input { display: none; }
-.zibase-toggle-track { width: 28px; height: 16px; background: var(--background-modifier-border); border-radius: 999px; position: relative; transition: background 0.2s; }
-.zibase-toggle-input:checked + .zibase-toggle-track { background: var(--interactive-accent); }
-.zibase-toggle-thumb { position: absolute; top: 2px; left: 2px; width: 12px; height: 12px; background: white; border-radius: 50%; transition: transform 0.2s; box-shadow: 0 1px 3px rgba(0,0,0,0.2); }
-.zibase-toggle-input:checked + .zibase-toggle-track .zibase-toggle-thumb { transform: translateX(12px); }
-.zibase-select { background: var(--background-secondary); border: 1px solid var(--background-modifier-border); border-radius: 5px; padding: 3px 6px; color: var(--text-normal); font-size: 0.88em; cursor: pointer; outline: none; max-width: 160px; }
-.zibase-select:focus { border-color: var(--interactive-accent); }
-.zibase-label { display: inline-block; padding: 2px 10px; border-radius: 999px; font-size: 0.8em; font-weight: 500; background: color-mix(in srgb, var(--lc, #60a5fa) 15%, transparent); color: var(--lc, #60a5fa); border: 1px solid color-mix(in srgb, var(--lc, #60a5fa) 35%, transparent); cursor: pointer; transition: opacity 0.15s; }
-.zibase-label:hover { opacity: 0.75; }
 
-/* Fix: text rendered — p tag pointer-events none */
-.zibase-text-rendered { display: inline; cursor: default; color: var(--text-normal); }
-.zibase-text-rendered p { margin: 0; display: inline; pointer-events: none; }
-.zibase-text-rendered a { color: var(--link-color, var(--interactive-accent)); text-decoration: none; pointer-events: all; cursor: pointer; }
-.zibase-text-rendered a:hover { text-decoration: underline; }
-.zibase-text-empty { color: var(--text-faint); font-style: italic; }
-
-.zibase-number, .zibase-date { background: var(--background-modifier-form-field); border: 1px solid var(--background-modifier-border); border-radius: 5px; padding: 2px 6px; color: var(--text-normal); font-size: 0.88em; outline: none; max-width: 120px; }
-.zibase-number:focus, .zibase-date:focus { border-color: var(--interactive-accent); }
-.zibase-inline-input { background: var(--background-modifier-form-field); border: 1px solid var(--interactive-accent); border-radius: 5px; padding: 2px 6px; color: var(--text-normal); font-size: 0.88em; outline: none; width: 100%; min-width: 60px; box-sizing: border-box; }
-.zibase-footer { display: flex; align-items: center; gap: 10px; padding: 6px 12px; border-top: 1px solid var(--background-modifier-border); background: var(--background-secondary); }
-.zibase-add-row-btn { display: flex; align-items: center; gap: 5px; background: none; border: 1px solid var(--background-modifier-border); border-radius: 5px; padding: 3px 10px; color: var(--text-muted); font-size: 0.78em; cursor: pointer; opacity: 0; transition: color 0.15s, border-color 0.15s, background 0.15s, opacity 0.15s; }
-.zibase-wrapper:hover .zibase-add-row-btn { opacity: 1; }
-.zibase-add-row-btn:hover { color: var(--interactive-accent); border-color: var(--interactive-accent); background: color-mix(in srgb, var(--interactive-accent) 8%, transparent); }
-.zibase-row-count { font-size: 0.72em; color: var(--text-faint); margin-left: auto; }
-
-/* ── Formula cells ── */
-.zibase-formula-result { font-weight: 600; color: var(--interactive-accent); cursor: default; }
-.zibase-formula-source { font-family: var(--font-monospace); font-size: 0.88em; color: var(--text-muted); background: var(--background-secondary); padding: 1px 6px; border-radius: 4px; }
-.zibase-formula-empty { color: var(--text-faint); font-style: italic; }
-.zibase-formula-cols { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; margin-bottom: 4px; }
-.zibase-formula-cols-label { font-size: 0.82em; color: var(--text-muted); }
-.zibase-formula-col-chip { font-size: 0.78em; background: var(--background-secondary); border: 1px solid var(--background-modifier-border); border-radius: 4px; padding: 1px 6px; cursor: pointer; transition: border-color 0.15s, color 0.15s; }
-.zibase-formula-col-chip:hover { border-color: var(--interactive-accent); color: var(--interactive-accent); }
-
-/* \u2500\u2500 Header inline stats \u2500\u2500 */
-.zibase-th-stat { display: flex; align-items: center; gap: 2px; margin-top: 3px; cursor: pointer; opacity: 0; transition: opacity 0.15s; border-radius: 3px; padding: 1px 4px; }
-.zibase-wrapper:hover .zibase-th-stat { opacity: 1; }
-.zibase-th-stat:hover { background: color-mix(in srgb, var(--interactive-accent) 10%, transparent); }
-.zibase-th-stat-mode { font-weight: 700; font-size: 0.8em; letter-spacing: 0.04em; color: var(--interactive-accent); }
-.zibase-th-stat-value { font-weight: 600; font-size: 0.8em; color: var(--text-normal); }
-
-/* ── Dropdown menu ── */
-.zibase-dropdown { position: absolute; z-index: 9999; background: var(--background-primary); border: 1px solid var(--background-modifier-border); border-radius: 8px; padding: 4px; min-width: 180px; box-shadow: 0 4px 20px rgba(0,0,0,0.15); animation: zibase-menu-in 0.1s ease; }
-.zibase-dropdown-item { display: flex; align-items: center; gap: 8px; padding: 7px 10px; border-radius: 5px; cursor: pointer; transition: background 0.1s; color: var(--text-normal); font-size: 0.88em; position: relative; }
-.zibase-dropdown-item:hover { background: var(--background-modifier-hover); }
-.zibase-dropdown-item:hover .zibase-dropdown-sub { display: block; }
-.zibase-dropdown-label { flex: 1; }
-.zibase-dropdown-arrow { font-size: 0.7em; color: var(--text-faint); }
-.zibase-dropdown-icon { width: 18px; text-align: center; }
-.zibase-dropdown-has-sub { }
-.zibase-dropdown-sub { display: none; position: absolute; left: 100%; top: 0; background: var(--background-primary); border: 1px solid var(--background-modifier-border); border-radius: 8px; padding: 4px; min-width: 180px; box-shadow: 0 4px 20px rgba(0,0,0,0.15); z-index: 10000; }
-.zibase-dropdown-subitem { display: flex; align-items: center; gap: 8px; padding: 7px 10px; border-radius: 5px; cursor: pointer; transition: background 0.1s; color: var(--text-normal); font-size: 0.88em; }
-.zibase-dropdown-subitem:hover { background: var(--background-modifier-hover); }
-.zibase-dropdown-subitem.zibase-menu-active { color: var(--interactive-accent); font-weight: 600; }
-.zibase-view-check { color: var(--interactive-accent); font-size: 0.9em; }
-
-/* Rules sub panel */
-.zibase-rules-sub { min-width: 280px; padding: 8px; }
-.zibase-rules-title { font-size: 0.7em; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-faint); padding: 2px 4px 8px; border-bottom: 1px solid var(--background-modifier-border); margin-bottom: 6px; }
-.zibase-rules-row { display: flex; align-items: center; gap: 6px; margin-bottom: 4px; }
-.zibase-rules-name { flex: 1; background: var(--background-modifier-form-field); border: 1px solid var(--background-modifier-border); border-radius: 4px; padding: 3px 6px; color: var(--text-normal); font-size: 0.82em; outline: none; min-width: 0; }
-.zibase-rules-name:focus { border-color: var(--interactive-accent); }
-.zibase-rules-arrow { color: var(--text-faint); font-size: 0.8em; flex-shrink: 0; }
-.zibase-rules-type { background: var(--background-secondary); border: 1px solid var(--background-modifier-border); border-radius: 4px; padding: 3px 4px; color: var(--text-normal); font-size: 0.82em; outline: none; }
-.zibase-rules-remove { background: none; border: none; color: var(--text-faint); cursor: pointer; font-size: 1em; padding: 2px 5px; border-radius: 3px; flex-shrink: 0; }
-.zibase-rules-remove:hover { color: #ef4444; background: color-mix(in srgb, #ef4444 12%, transparent); }
-.zibase-rules-add { margin-top: 6px; padding-top: 6px; border-top: 1px solid var(--background-modifier-border); }
-.zibase-rules-add-btn { background: none; border: 1px dashed var(--background-modifier-border); border-radius: 5px; padding: 4px 10px; color: var(--text-muted); font-size: 0.82em; cursor: pointer; width: 100%; }
-.zibase-rules-add-btn:hover { border-color: var(--interactive-accent); color: var(--interactive-accent); }
-
-/* Context menu */
-.zibase-context-menu { position: absolute; z-index: 9999; background: var(--background-primary); border: 1px solid var(--background-modifier-border); border-radius: 8px; padding: 4px; min-width: 140px; box-shadow: 0 4px 20px rgba(0,0,0,0.15); animation: zibase-menu-in 0.1s ease; }
-@keyframes zibase-menu-in { from { opacity: 0; transform: scale(0.95) translateY(-4px); } to { opacity: 1; transform: scale(1) translateY(0); } }
-.zibase-menu-title { font-size: 0.7em; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-faint); padding: 4px 10px 6px; border-bottom: 1px solid var(--background-modifier-border); margin-bottom: 3px; }
-.zibase-menu-item { display: flex; align-items: center; gap: 8px; padding: 6px 10px; border-radius: 5px; cursor: pointer; transition: background 0.1s; color: var(--text-normal); font-size: 0.88em; }
-.zibase-menu-item:hover { background: var(--background-modifier-hover); }
-.zibase-menu-item.zibase-menu-active { color: var(--interactive-accent); font-weight: 600; }
-.zibase-menu-icon { width: 16px; text-align: center; opacity: 0.7; font-size: 0.9em; }
-
-/* Link tooltip */
-.zibase-link-tooltip { position: absolute; z-index: 99999; background: var(--background-primary); border: 1px solid var(--background-modifier-border); border-radius: 5px; padding: 3px 8px; font-size: 0.75em; color: var(--text-muted); pointer-events: none; box-shadow: 0 2px 8px rgba(0,0,0,0.12); white-space: nowrap; }
-
-/* Toast */
-.zibase-toast { position: fixed; bottom: 24px; right: 24px; z-index: 99999; background: var(--background-primary); border: 1px solid var(--background-modifier-border); border-radius: 8px; padding: 10px 16px; font-size: 0.88em; color: var(--text-normal); box-shadow: 0 4px 20px rgba(0,0,0,0.15); opacity: 0; transform: translateY(8px); transition: opacity 0.2s, transform 0.2s; pointer-events: none; }
-.zibase-toast-show { opacity: 1; transform: translateY(0); }
-
-/* Modal */
-.zibase-modal { padding: 4px; }
-.zibase-modal-title { margin: 0 0 12px; font-size: 1em; font-weight: 600; }
-.zibase-modal-chips { display: flex; flex-wrap: wrap; gap: 6px; min-height: 32px; margin-bottom: 12px; padding: 8px; background: var(--background-secondary); border-radius: 6px; border: 1px solid var(--background-modifier-border); }
-.zibase-modal-chip { display: flex; align-items: center; gap: 4px; background: color-mix(in srgb, var(--interactive-accent) 15%, transparent); color: var(--interactive-accent); border: 1px solid color-mix(in srgb, var(--interactive-accent) 30%, transparent); border-radius: 999px; padding: 2px 8px; font-size: 0.82em; font-weight: 500; }
-.zibase-chip-remove { cursor: pointer; opacity: 0.6; font-size: 1em; margin-left: 2px; }
-.zibase-chip-remove:hover { opacity: 1; }
-.zibase-modal-input-row { display: flex; gap: 6px; margin-bottom: 12px; }
-.zibase-modal-input { flex: 1; background: var(--background-modifier-form-field); border: 1px solid var(--background-modifier-border); border-radius: 6px; padding: 6px 10px; color: var(--text-normal); font-size: 0.9em; outline: none; width: 100%; }
-.zibase-modal-input:focus { border-color: var(--interactive-accent); }
-.zibase-modal-add-btn { background: var(--background-secondary); border: 1px solid var(--background-modifier-border); border-radius: 6px; padding: 6px 12px; color: var(--text-normal); font-size: 0.88em; cursor: pointer; }
-.zibase-modal-add-btn:hover { border-color: var(--interactive-accent); color: var(--interactive-accent); }
-.zibase-modal-apply-btn { width: 100%; background: var(--interactive-accent); border: none; border-radius: 6px; padding: 8px; color: white; font-size: 0.9em; cursor: pointer; font-weight: 600; margin-top: 4px; }
-.zibase-modal-apply-btn:hover { opacity: 0.85; }
-
-/* Settings tab */
-.zibase-settings-desc { color: var(--text-muted); font-size: 0.9em; margin-bottom: 0.5em; }
-.zibase-rules-container { margin-bottom: 12px; }
-.zibase-rule-row { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
-.zibase-rule-name { flex: 1; background: var(--background-modifier-form-field); border: 1px solid var(--background-modifier-border); border-radius: 5px; padding: 5px 8px; color: var(--text-normal); font-size: 0.88em; outline: none; }
-.zibase-rule-name:focus { border-color: var(--interactive-accent); }
-.zibase-rule-arrow { color: var(--text-faint); flex-shrink: 0; }
-.zibase-rule-type { background: var(--background-secondary); border: 1px solid var(--background-modifier-border); border-radius: 5px; padding: 5px 6px; color: var(--text-normal); font-size: 0.88em; outline: none; }
-.zibase-rule-remove { background: none; border: none; color: var(--text-faint); cursor: pointer; font-size: 1.1em; padding: 2px 6px; border-radius: 3px; }
-.zibase-rule-remove:hover { color: #ef4444; background: color-mix(in srgb, #ef4444 12%, transparent); }
-
-/* ── Kanban View ── */
-.zibase-kanban { padding: 12px; }
-.zibase-kanban-notice { text-align: center; color: var(--text-faint); font-style: italic; padding: 24px; }
-.zibase-kanban-lanes { display: flex; gap: 12px; overflow-x: auto; padding-bottom: 8px; align-items: flex-start; }
-.zibase-kanban-lane { min-width: 200px; max-width: 280px; flex: 1; background: var(--background-secondary); border-radius: 8px; border: 1px solid var(--background-modifier-border); overflow: hidden; }
-.zibase-kanban-lane-header { display: flex; align-items: center; justify-content: space-between; padding: 8px 12px; border-bottom: 2px solid color-mix(in srgb, var(--lane-color, var(--interactive-accent)) 40%, transparent); background: color-mix(in srgb, var(--lane-color, var(--interactive-accent)) 6%, transparent); }
-.zibase-kanban-lane-title { font-size: 0.78em; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; }
-.zibase-kanban-lane-count { font-size: 0.7em; color: var(--text-faint); background: var(--background-modifier-border); border-radius: 999px; padding: 1px 7px; font-weight: 600; }
-.zibase-kanban-lane-body { padding: 8px; min-height: 60px; display: flex; flex-direction: column; gap: 8px; transition: background 0.15s; }
-.zibase-kanban-lane-dragover { background: color-mix(in srgb, var(--interactive-accent) 8%, transparent); }
-.zibase-kanban-card { background: var(--background-primary); border: 1px solid var(--background-modifier-border); border-radius: 6px; padding: 10px 12px; cursor: grab; transition: box-shadow 0.15s, transform 0.15s, opacity 0.15s; }
-.zibase-kanban-card:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.1); transform: translateY(-1px); }
-.zibase-kanban-card-dragging { opacity: 0.5; transform: rotate(2deg); }
-.zibase-kanban-card-title { font-weight: 600; font-size: 0.9em; color: var(--text-normal); margin-bottom: 6px; }
-.zibase-kanban-card-field { display: flex; align-items: center; gap: 6px; margin-top: 3px; }
-.zibase-kanban-field-label { font-size: 0.7em; color: var(--text-faint); text-transform: uppercase; letter-spacing: 0.04em; font-weight: 600; min-width: 40px; }
-.zibase-kanban-field-value { font-size: 0.82em; color: var(--text-muted); }
-.zibase-kanban-label { font-size: 0.72em; }
-
-/* ── Gallery View ── */
-.zibase-gallery { padding: 12px; }
-.zibase-gallery-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; }
-.zibase-gallery-card { background: var(--background-secondary); border: 1px solid var(--background-modifier-border); border-radius: 8px; padding: 14px; transition: box-shadow 0.2s, transform 0.2s; cursor: default; }
-.zibase-gallery-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.1); transform: translateY(-2px); }
-.zibase-gallery-card-title { font-weight: 700; font-size: 0.95em; color: var(--text-normal); margin-bottom: 10px; padding-bottom: 8px; border-bottom: 1px solid var(--background-modifier-border); }
-.zibase-gallery-card-fields { display: flex; flex-direction: column; gap: 5px; }
-.zibase-gallery-field { display: flex; align-items: center; gap: 5px; font-size: 0.82em; }
-.zibase-gallery-field-name { color: var(--text-faint); font-size: 0.9em; }
-.zibase-gallery-field-value { color: var(--text-muted); }
-.zibase-gallery-field-select { color: var(--text-normal); font-weight: 500; }
-.zibase-gallery-field-icon { font-size: 0.85em; }
-
-/* ── Calendar View ── */
-.zibase-calendar { padding: 12px; }
-.zibase-calendar-notice { text-align: center; color: var(--text-faint); font-style: italic; padding: 24px; }
-.zibase-calendar-nav { display: flex; align-items: center; justify-content: center; gap: 16px; margin-bottom: 12px; }
-.zibase-calendar-nav-btn { background: none; border: 1px solid var(--background-modifier-border); border-radius: 5px; padding: 4px 10px; color: var(--text-muted); cursor: pointer; font-size: 0.85em; transition: color 0.15s, border-color 0.15s; }
-.zibase-calendar-nav-btn:hover { color: var(--interactive-accent); border-color: var(--interactive-accent); }
-.zibase-calendar-month-label { font-weight: 700; font-size: 0.95em; color: var(--text-normal); min-width: 160px; text-align: center; }
-.zibase-calendar-day-headers { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; margin-bottom: 4px; }
-.zibase-calendar-day-header { text-align: center; font-size: 0.7em; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-faint); padding: 4px; }
-.zibase-calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
-.zibase-calendar-cell { min-height: 70px; background: var(--background-secondary); border: 1px solid var(--background-modifier-border); border-radius: 5px; padding: 4px 6px; overflow: hidden; transition: border-color 0.15s; }
-.zibase-calendar-cell-empty { background: transparent; border-color: transparent; }
-.zibase-calendar-cell-clickable { cursor: pointer; }
-.zibase-calendar-cell-clickable:hover { border-color: var(--interactive-accent); background: color-mix(in srgb, var(--interactive-accent) 5%, transparent); }
-.zibase-calendar-today { border-color: var(--interactive-accent); box-shadow: inset 0 0 0 1px var(--interactive-accent); }
-.zibase-calendar-day-num { font-size: 0.75em; font-weight: 700; color: var(--text-muted); display: block; margin-bottom: 3px; }
-.zibase-calendar-today .zibase-calendar-day-num { color: var(--interactive-accent); }
-.zibase-calendar-entry { font-size: 0.68em; padding: 2px 5px; border-radius: 3px; margin-bottom: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; background: color-mix(in srgb, var(--interactive-accent) 15%, transparent); color: var(--interactive-accent); font-weight: 500; }
-.zibase-calendar-entry-colored { background: color-mix(in srgb, var(--lc, var(--interactive-accent)) 15%, transparent); color: var(--lc, var(--interactive-accent)); }
-`;
 

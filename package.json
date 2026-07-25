@@ -1,7 +1,7 @@
 {
   "name": "zibase",
   "version": "1.0.0",
-  "description": "Markdown tables as living databases — for Obsidian.",
+  "description": "Markdown tables as living databases.",
   "main": "main.js",
   "scripts": {
     "build": "node esbuild.config.mjs",
