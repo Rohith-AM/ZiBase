@@ -1,4 +1,5 @@
 import {
+  Component,
   MarkdownRenderer,
   setIcon,
   TFile,
@@ -541,7 +542,7 @@ export class ZiBaseTableRenderer implements ZiBaseHost {
     if (!displaySpan) return;
     displaySpan.empty();
     if (newRaw) {
-      await MarkdownRenderer.render(this.app, newRaw, displaySpan as HTMLElement, context.sourcePath, this.plugin);
+      await MarkdownRenderer.render(this.app, newRaw, displaySpan as HTMLElement, context.sourcePath, new Component());
       window.setTimeout(() => {
         displaySpan.querySelectorAll("a").forEach((a) => attachLinkTooltip(a));
       }, 50);

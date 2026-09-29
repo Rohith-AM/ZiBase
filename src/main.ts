@@ -91,12 +91,6 @@ class ZiBaseSettingTab extends PluginSettingTab {
   display(): void {
     const { containerEl } = this;
     containerEl.empty();
-    new Setting(containerEl).setName("ZiBase — ழியல்").setHeading();
-    containerEl.createEl("p", {
-      text: "Markdown tables as living databases.",
-      cls: "zibase-settings-desc",
-    });
-    new Setting(containerEl).setName("General").setHeading();
     new Setting(containerEl)
       .setName("Render in Reading View")
       .setDesc("Show rich UI when viewing notes in reading mode.")
@@ -138,15 +132,16 @@ class ZiBaseSettingTab extends PluginSettingTab {
     new Setting(containerEl)
       .setName("Reset to defaults")
       .setDesc("Restore the original column name rules.")
-      .addButton((btn) =>
-        btn.setButtonText("Reset").setDestructive().onClick(() => {
+      .addButton((btn) => {
+        btn.setButtonText("Reset").onClick(() => {
           void (async () => {
             this.plugin.settings.columnRules = [...DEFAULT_COLUMN_RULES];
             await this.plugin.saveSettings();
             this.renderRules(rulesContainer);
           })();
-        }),
-      );
+        });
+        btn.buttonEl.addClass("mod-warning");
+      });
     new Setting(containerEl).setName("About").setHeading();
     containerEl.createEl("p", { text: `ZiBase v${PLUGIN_VERSION} — Built by Rohith A (ZIYAL)`, cls: "zibase-settings-desc" });
     containerEl.createEl("p", { text: "Markdown-native database plugin.", cls: "zibase-settings-desc" });

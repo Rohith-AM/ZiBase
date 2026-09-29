@@ -1,4 +1,4 @@
-import { MarkdownRenderer, type MarkdownPostProcessorContext } from "obsidian";
+import { Component, MarkdownRenderer, type MarkdownPostProcessorContext } from "obsidian";
 import {
   evaluateFormula,
   evaluateSimpleMath,
@@ -103,7 +103,7 @@ export function renderCell(
       break;
     }
     case "label": {
-      const chip = td.createEl("span", { text: rawValue.trim() || "—", cls: "zibase-label" });
+      const chip = td.createSpan({ text: rawValue.trim() || "—", cls: "zibase-label" });
       chip.setCssProps({ "--lc": getLabelColor(rawValue.trim()) });
       chip.addEventListener("click", () => startLabelEdit(chip, rawValue.trim(), onChange));
       break;
@@ -206,7 +206,7 @@ export function renderCell(
 
       const displaySpan = td.createSpan({ cls: "zibase-text-rendered" });
       if (val) {
-        void MarkdownRenderer.render(host.app, val, displaySpan, context.sourcePath, host.plugin).then(() => {
+        void MarkdownRenderer.render(host.app, val, displaySpan, context.sourcePath, new Component()).then(() => {
           displaySpan.querySelectorAll("a").forEach((a) => attachLinkTooltip(a));
           td.addEventListener("click", (e) => {
             if (e.altKey) {

@@ -1,4 +1,4 @@
-import { MarkdownRenderer, type MarkdownPostProcessorContext, type MarkdownSectionInformation } from "obsidian";
+import { Component, MarkdownRenderer, type MarkdownPostProcessorContext, type MarkdownSectionInformation } from "obsidian";
 import { filterDataRows, parseBool, splitRow } from "../schema";
 import type { TableSchema, ZiBaseHost } from "../types";
 import { getLabelColor } from "../ui";
@@ -31,7 +31,7 @@ export function buildGalleryView(
     const titleCol = schema.columns.find((c) => c.type.kind === "text");
     const titleValue = titleCol ? (cells[titleCol.index] || "").trim() : (cells[0] || "").trim();
     const titleDiv = card.createDiv({ cls: "zibase-gallery-card-title" });
-    void MarkdownRenderer.render(host.app, titleValue || "—", titleDiv, context.sourcePath, host.plugin);
+    void MarkdownRenderer.render(host.app, titleValue || "—", titleDiv, context.sourcePath, new Component());
 
     const fieldsWrap = card.createDiv("zibase-gallery-card-fields");
     schema.columns.forEach((col, colIdx) => {

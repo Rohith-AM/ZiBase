@@ -1,4 +1,4 @@
-import { MarkdownRenderer, type MarkdownPostProcessorContext, type MarkdownSectionInformation } from "obsidian";
+import { Component, MarkdownRenderer, type MarkdownPostProcessorContext, type MarkdownSectionInformation } from "obsidian";
 import { filterDataRows, parseBool, parseMultiSelect, splitRow } from "../schema";
 import type { TableSchema, ZiBaseHost } from "../types";
 import { getLabelColor } from "../ui";
@@ -111,7 +111,7 @@ export function buildKanbanView(
         if (col.type.kind === "text") {
           if (!card.querySelector(".zibase-kanban-card-title")) {
             const titleEl = card.createDiv("zibase-kanban-card-title");
-            void MarkdownRenderer.render(host.app, rawValue, titleEl, context.sourcePath, host.plugin);
+            void MarkdownRenderer.render(host.app, rawValue, titleEl, context.sourcePath, new Component());
             return;
           }
         }
@@ -136,7 +136,7 @@ export function buildKanbanView(
       if (!card.querySelector(".zibase-kanban-card-title")) {
         const titleEl = createDiv();
         titleEl.className = "zibase-kanban-card-title";
-        void MarkdownRenderer.render(host.app, cells[0] || "—", titleEl, context.sourcePath, host.plugin);
+        void MarkdownRenderer.render(host.app, cells[0] || "—", titleEl, context.sourcePath, new Component());
         card.insertBefore(titleEl, card.firstChild);
       }
     });
