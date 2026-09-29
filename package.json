@@ -1,6 +1,6 @@
 {
   "name": "zibase",
-  "version": "1.2.3",
+  "version": "1.2.4",
   "description": "Markdown tables as living databases.",
   "main": "main.js",
   "scripts": {

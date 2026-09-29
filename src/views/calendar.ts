@@ -1,4 +1,4 @@
-import { Component, MarkdownRenderer, TFile, type MarkdownPostProcessorContext, type MarkdownSectionInformation } from "obsidian";
+import { Component, MarkdownRenderChild, MarkdownRenderer, TFile, type MarkdownPostProcessorContext, type MarkdownSectionInformation } from "obsidian";
 import { filterDataRows, serializeRow, splitRow } from "../schema";
 import type { TableSchema, ZiBaseHost } from "../types";
 import { getLabelColor } from "../ui";
@@ -98,7 +98,9 @@ export function buildCalendarView(
       const entries = dateMap.get(dateStr) || [];
       entries.forEach((entry) => {
         const pill = cell.createDiv("zibase-calendar-entry");
-        void MarkdownRenderer.render(host.app, entry.title || "—", pill, context.sourcePath, new Component());
+        const comp = new MarkdownRenderChild(pill);
+        context.addChild(comp);
+        void MarkdownRenderer.render(host.app, entry.title || "—", pill, context.sourcePath, comp);
         if (entry.label) {
           pill.setCssProps({ "--lc": getLabelColor(entry.label) });
           pill.classList.add("zibase-calendar-entry-colored");

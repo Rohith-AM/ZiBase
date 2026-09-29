@@ -1,4 +1,4 @@
-import { Component, MarkdownRenderer, type MarkdownPostProcessorContext } from "obsidian";
+import { Component, MarkdownRenderChild, MarkdownRenderer, type MarkdownPostProcessorContext } from "obsidian";
 import {
   evaluateFormula,
   evaluateSimpleMath,
@@ -206,7 +206,9 @@ export function renderCell(
 
       const displaySpan = td.createSpan({ cls: "zibase-text-rendered" });
       if (val) {
-        void MarkdownRenderer.render(host.app, val, displaySpan, context.sourcePath, new Component()).then(() => {
+        const comp = new MarkdownRenderChild(displaySpan);
+        context.addChild(comp);
+        void MarkdownRenderer.render(host.app, val, displaySpan, context.sourcePath, comp).then(() => {
           displaySpan.querySelectorAll("a").forEach((a) => attachLinkTooltip(a));
           td.addEventListener("click", (e) => {
             if (e.altKey) {
