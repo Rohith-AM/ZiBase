@@ -29,7 +29,7 @@
 .zibase-search { background: none; border: none; outline: none; color: var(--text-normal); font-size: 0.82em; width: 100%; padding: 0; }
 .zibase-search::placeholder { color: var(--text-faint); }
 .zibase-body { overflow-x: auto; transition: max-height 0.25s ease, opacity 0.2s; max-height: 4000px; opacity: 1; }
-.zibase-body-collapsed { max-height: 0 !important; opacity: 0; overflow: hidden; }
+.zibase-body.zibase-body-collapsed { max-height: 0; opacity: 0; overflow: hidden; }
 .zibase-table { width: 100%; border-collapse: collapse; background: var(--background-primary); }
 .zibase-th { padding: 8px 14px; text-align: left; font-size: 0.78em; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; color: var(--text-muted); background: var(--background-secondary-alt); border-bottom: 1px solid var(--background-modifier-border); white-space: nowrap; cursor: pointer; user-select: none; position: relative; }
 .zibase-th-drop-target { border-left: 2px solid var(--interactive-accent); }

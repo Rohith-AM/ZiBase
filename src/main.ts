@@ -15,7 +15,6 @@ export default class ZiBasePlugin extends Plugin {
   renderer!: ZiBaseTableRenderer;
 
   async onload(): Promise<void> {
-    console.log(`ZiBase v${PLUGIN_VERSION} loaded — ழியல்`);
     await this.loadSettings();
     this.renderer = new ZiBaseTableRenderer(this.app, this);
     if (this.settings.renderInReadingView) {
@@ -92,31 +91,35 @@ class ZiBaseSettingTab extends PluginSettingTab {
   display(): void {
     const { containerEl } = this;
     containerEl.empty();
-    containerEl.createEl("h2", { text: "ZiBase — ழியல்" });
+    new Setting(containerEl).setName("ZiBase — ழியல்").setHeading();
     containerEl.createEl("p", {
       text: "Markdown tables as living databases.",
       cls: "zibase-settings-desc",
     });
-    containerEl.createEl("h3", { text: "⚙️ General" });
+    new Setting(containerEl).setName("General").setHeading();
     new Setting(containerEl)
       .setName("Render in Reading View")
       .setDesc("Show rich UI when viewing notes in reading mode.")
       .addToggle((t) =>
-        t.setValue(this.plugin.settings.renderInReadingView).onChange(async (v) => {
-          this.plugin.settings.renderInReadingView = v;
-          await this.plugin.saveSettings();
+        t.setValue(this.plugin.settings.renderInReadingView).onChange((v) => {
+          void (async () => {
+            this.plugin.settings.renderInReadingView = v;
+            await this.plugin.saveSettings();
+          })();
         }),
       );
     new Setting(containerEl)
       .setName("Auto-infer schema")
       .setDesc("Automatically detect column types from plain markdown tables. Turn off to only enhance annotated tables.")
       .addToggle((t) =>
-        t.setValue(this.plugin.settings.inferSchema).onChange(async (v) => {
-          this.plugin.settings.inferSchema = v;
-          await this.plugin.saveSettings();
+        t.setValue(this.plugin.settings.inferSchema).onChange((v) => {
+          void (async () => {
+            this.plugin.settings.inferSchema = v;
+            await this.plugin.saveSettings();
+          })();
         }),
       );
-    containerEl.createEl("h3", { text: "🏷️ Column Name Rules" });
+    new Setting(containerEl).setName("Column name rules").setHeading();
     containerEl.createEl("p", {
       text: "When a column name matches, auto-assign that type. Applied to all inferred tables.",
       cls: "zibase-settings-desc",
@@ -124,23 +127,27 @@ class ZiBaseSettingTab extends PluginSettingTab {
     const rulesContainer = containerEl.createDiv("zibase-rules-container");
     this.renderRules(rulesContainer);
     new Setting(containerEl).addButton((btn) =>
-      btn.setButtonText("+ Add rule").setCta().onClick(async () => {
-        this.plugin.settings.columnRules.push({ name: "", type: "label" });
-        await this.plugin.saveSettings();
-        this.renderRules(rulesContainer);
+      btn.setButtonText("+ Add rule").setCta().onClick(() => {
+        void (async () => {
+          this.plugin.settings.columnRules.push({ name: "", type: "label" });
+          await this.plugin.saveSettings();
+          this.renderRules(rulesContainer);
+        })();
       }),
     );
     new Setting(containerEl)
       .setName("Reset to defaults")
       .setDesc("Restore the original column name rules.")
       .addButton((btn) =>
-        btn.setButtonText("Reset").setWarning().onClick(async () => {
-          this.plugin.settings.columnRules = [...DEFAULT_COLUMN_RULES];
-          await this.plugin.saveSettings();
-          this.renderRules(rulesContainer);
+        btn.setButtonText("Reset").setDestructive().onClick(() => {
+          void (async () => {
+            this.plugin.settings.columnRules = [...DEFAULT_COLUMN_RULES];
+            await this.plugin.saveSettings();
+            this.renderRules(rulesContainer);
+          })();
         }),
       );
-    containerEl.createEl("h3", { text: "ℹ️ About" });
+    new Setting(containerEl).setName("About").setHeading();
     containerEl.createEl("p", { text: `ZiBase v${PLUGIN_VERSION} — Built by Rohith A (ZIYAL)`, cls: "zibase-settings-desc" });
     containerEl.createEl("p", { text: "Markdown-native database plugin.", cls: "zibase-settings-desc" });
   }
@@ -151,9 +158,11 @@ class ZiBaseSettingTab extends PluginSettingTab {
       const row = container.createDiv("zibase-rule-row");
       const nameInput = row.createEl("input", { type: "text", cls: "zibase-rule-name", value: rule.name });
       nameInput.placeholder = "column name";
-      nameInput.addEventListener("change", async () => {
-        this.plugin.settings.columnRules[idx].name = nameInput.value.trim();
-        await this.plugin.saveSettings();
+      nameInput.addEventListener("change", () => {
+        void (async () => {
+          this.plugin.settings.columnRules[idx].name = nameInput.value.trim();
+          await this.plugin.saveSettings();
+        })();
       });
       row.createSpan({ text: "→", cls: "zibase-rule-arrow" });
       const typeSelect = row.createEl("select", { cls: "zibase-rule-type" });
@@ -161,15 +170,19 @@ class ZiBaseSettingTab extends PluginSettingTab {
         const opt = typeSelect.createEl("option", { text: t, value: t });
         if (t === rule.type) opt.selected = true;
       });
-      typeSelect.addEventListener("change", async () => {
-        this.plugin.settings.columnRules[idx].type = typeSelect.value;
-        await this.plugin.saveSettings();
+      typeSelect.addEventListener("change", () => {
+        void (async () => {
+          this.plugin.settings.columnRules[idx].type = typeSelect.value;
+          await this.plugin.saveSettings();
+        })();
       });
       const removeBtn = row.createEl("button", { text: "×", cls: "zibase-rule-remove" });
-      removeBtn.addEventListener("click", async () => {
-        this.plugin.settings.columnRules.splice(idx, 1);
-        await this.plugin.saveSettings();
-        this.renderRules(container);
+      removeBtn.addEventListener("click", () => {
+        void (async () => {
+          this.plugin.settings.columnRules.splice(idx, 1);
+          await this.plugin.saveSettings();
+          this.renderRules(container);
+        })();
       });
     });
   }

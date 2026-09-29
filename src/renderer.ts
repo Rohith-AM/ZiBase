@@ -1,5 +1,6 @@
 import {
   MarkdownRenderer,
+  setIcon,
   TFile,
   type App,
   type MarkdownPostProcessorContext,
@@ -64,7 +65,7 @@ export class ZiBaseTableRenderer implements ZiBaseHost {
     context: MarkdownPostProcessorContext,
     sectionInfo: MarkdownSectionInformation,
   ): HTMLElement {
-    let currentView: ViewName | string = "table";
+    let currentView: ViewName = "table";
     let collapsed = false;
     let filterQuery = "";
     let sortColIdx: number | null = null;
@@ -79,11 +80,7 @@ export class ZiBaseTableRenderer implements ZiBaseHost {
     wrapper.className = "zibase-wrapper";
     const topbar = wrapper.createDiv("zibase-topbar");
     const collapseBtn = topbar.createEl("button", { cls: "zibase-collapse-btn" });
-    collapseBtn.empty();
-    collapseBtn.insertAdjacentHTML(
-      "beforeend",
-      `<svg width="9" height="9" viewBox="0 0 9 9"><path d="M1.5 1.5 L7.5 4.5 L1.5 7.5 Z" fill="currentColor"/></svg>`,
-    );
+    setIcon(collapseBtn, "chevron-right");
     const topLeft = topbar.createDiv("zibase-topbar-left");
     topLeft.createSpan({ text: "⟁", cls: "zibase-logo" });
     const zibaseName = topLeft.createSpan({ text: "ZiBase", cls: "zibase-name zibase-name-btn" });
@@ -93,11 +90,8 @@ export class ZiBaseTableRenderer implements ZiBaseHost {
     });
     const topRight = topbar.createDiv("zibase-topbar-right");
     const searchWrap = topRight.createDiv("zibase-search-wrap");
-    searchWrap.empty();
-    searchWrap.insertAdjacentHTML(
-      "beforeend",
-      `<svg class="zibase-search-icon" width="11" height="11" viewBox="0 0 16 16"><circle cx="6.5" cy="6.5" r="5" stroke="currentColor" stroke-width="1.5" fill="none"/><line x1="10.5" y1="10.5" x2="14" y2="14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>`,
-    );
+    const searchIcon = searchWrap.createSpan({ cls: "zibase-search-icon" });
+    setIcon(searchIcon, "search");
     const searchInput = searchWrap.createEl("input", { cls: "zibase-search", type: "text" });
     searchInput.placeholder = "Filter…";
     zibaseName.addEventListener("click", (e) => {
@@ -111,12 +105,11 @@ export class ZiBaseTableRenderer implements ZiBaseHost {
 
     const footer = body.createDiv("zibase-footer");
     const addRowBtn = footer.createEl("button", { cls: "zibase-add-row-btn" });
-    addRowBtn.empty();
-    addRowBtn.insertAdjacentHTML(
-      "beforeend",
-      `<svg width="10" height="10" viewBox="0 0 10 10"><line x1="5" y1="1" x2="5" y2="9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><line x1="1" y1="5" x2="9" y2="5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg> Add row`,
-    );
-    addRowBtn.addEventListener("click", async () => await this.addRow(context, sectionInfo, schema));
+    setIcon(addRowBtn, "plus");
+    addRowBtn.appendText(" Add row");
+    addRowBtn.addEventListener("click", () => {
+      void this.addRow(context, sectionInfo, schema);
+    });
     const rowCount = footer.createSpan({ cls: "zibase-row-count" });
     const updateCount = () => {
       const total = getDataRows().length;
@@ -187,8 +180,8 @@ export class ZiBaseTableRenderer implements ZiBaseHost {
     sectionInfo: MarkdownSectionInformation,
     _rawDataLines: string[],
     _badge: HTMLElement,
-    currentView: ViewName | string,
-    onViewChange: (view: string) => void,
+    currentView: ViewName,
+    onViewChange: (view: ViewName) => void,
   ): void {
     document.querySelectorAll(".zibase-dropdown").forEach((m) => m.remove());
     const menu = createDiv();
@@ -226,7 +219,7 @@ export class ZiBaseTableRenderer implements ZiBaseHost {
     viewItem.createSpan({ text: "View", cls: "zibase-dropdown-label" });
     viewItem.createSpan({ text: "▶", cls: "zibase-dropdown-arrow" });
     const viewSub = viewItem.createDiv("zibase-dropdown-sub");
-    const viewOptions = [
+    const viewOptions: { icon: string; label: string; view: ViewName }[] = [
       { icon: "📊", label: "Table", view: "table" },
       { icon: "📋", label: "Kanban", view: "kanban" },
       { icon: "🖼️", label: "Gallery", view: "gallery" },
@@ -304,9 +297,11 @@ export class ZiBaseTableRenderer implements ZiBaseHost {
       const row = container.createDiv("zibase-rules-row");
       const nameInput = row.createEl("input", { type: "text", cls: "zibase-rules-name", value: rule.name });
       nameInput.placeholder = "name";
-      nameInput.addEventListener("change", async () => {
-        this.plugin.settings.columnRules[idx].name = nameInput.value.trim();
-        await this.plugin.saveSettings();
+      nameInput.addEventListener("change", () => {
+        void (async () => {
+          this.plugin.settings.columnRules[idx].name = nameInput.value.trim();
+          await this.plugin.saveSettings();
+        })();
       });
       row.createSpan({ text: "→", cls: "zibase-rules-arrow" });
       const typeSelect = row.createEl("select", { cls: "zibase-rules-type" });
@@ -314,23 +309,29 @@ export class ZiBaseTableRenderer implements ZiBaseHost {
         const opt = typeSelect.createEl("option", { text: t, value: t });
         if (t === rule.type) opt.selected = true;
       });
-      typeSelect.addEventListener("change", async () => {
-        this.plugin.settings.columnRules[idx].type = typeSelect.value;
-        await this.plugin.saveSettings();
+      typeSelect.addEventListener("change", () => {
+        void (async () => {
+          this.plugin.settings.columnRules[idx].type = typeSelect.value;
+          await this.plugin.saveSettings();
+        })();
       });
       const removeBtn = row.createEl("button", { text: "×", cls: "zibase-rules-remove" });
-      removeBtn.addEventListener("click", async () => {
-        this.plugin.settings.columnRules.splice(idx, 1);
-        await this.plugin.saveSettings();
-        this.renderRulesPanel(container);
+      removeBtn.addEventListener("click", () => {
+        void (async () => {
+          this.plugin.settings.columnRules.splice(idx, 1);
+          await this.plugin.saveSettings();
+          this.renderRulesPanel(container);
+        })();
       });
     });
     const addRow = container.createDiv("zibase-rules-add");
     const addBtn = addRow.createEl("button", { text: "+ Add rule", cls: "zibase-rules-add-btn" });
-    addBtn.addEventListener("click", async () => {
-      this.plugin.settings.columnRules.push({ name: "", type: "label" });
-      await this.plugin.saveSettings();
-      this.renderRulesPanel(container);
+    addBtn.addEventListener("click", () => {
+      void (async () => {
+        this.plugin.settings.columnRules.push({ name: "", type: "label" });
+        await this.plugin.saveSettings();
+        this.renderRulesPanel(container);
+      })();
     });
   }
 
@@ -424,7 +425,7 @@ export class ZiBaseTableRenderer implements ZiBaseHost {
       item.createSpan({ text: icon, cls: "zibase-menu-icon" });
       item.createSpan({ text: label, cls: "zibase-menu-label" });
       if (schema.columns[colIdx]?.type.kind === kind) item.classList.add("zibase-menu-active");
-      item.addEventListener("click", async () => {
+      item.addEventListener("click", () => {
         closeMenu();
         if (kind === "select") {
           const currentOpts = schema.columns[colIdx]?.type.kind === "select" ? schema.columns[colIdx].type.options : [];
@@ -432,18 +433,18 @@ export class ZiBaseTableRenderer implements ZiBaseHost {
             this.app,
             schema.columns[colIdx]?.name ?? "Column",
             currentOpts,
-            async (opts) => {
-              await this.writeColumnType(context, sectionInfo, schema, colIdx, `select:${opts.join(",")}`, badge);
+            (opts) => {
+              void this.writeColumnType(context, sectionInfo, schema, colIdx, `select:${opts.join(",")}`, badge);
             },
           ).open();
         } else if (kind === "formula") {
           const colName = schema.columns[colIdx]?.name;
           const currentExpr = schema.columns[colIdx]?.type.kind === "formula" ? schema.columns[colIdx].type.expression : "";
-          new FormulaInputModal(this.app, colName || "Column", currentExpr, schema.columns, async (expr) => {
-            await this.writeColumnType(context, sectionInfo, schema, colIdx, `formula:${expr}`, badge);
+          new FormulaInputModal(this.app, colName || "Column", currentExpr, schema.columns, (expr) => {
+            void this.writeColumnType(context, sectionInfo, schema, colIdx, `formula:${expr}`, badge);
           }).open();
         } else {
-          await this.writeColumnType(context, sectionInfo, schema, colIdx, kind, badge);
+          void this.writeColumnType(context, sectionInfo, schema, colIdx, kind, badge);
         }
       });
     });
@@ -540,7 +541,7 @@ export class ZiBaseTableRenderer implements ZiBaseHost {
     if (!displaySpan) return;
     displaySpan.empty();
     if (newRaw) {
-      await MarkdownRenderer.renderMarkdown(newRaw, displaySpan as HTMLElement, context.sourcePath, this.plugin);
+      await MarkdownRenderer.render(this.app, newRaw, displaySpan as HTMLElement, context.sourcePath, this.plugin);
       window.setTimeout(() => {
         displaySpan.querySelectorAll("a").forEach((a) => attachLinkTooltip(a));
       }, 50);

@@ -56,7 +56,7 @@ export function attachLinkTooltip(a: HTMLAnchorElement): void {
 export function startLabelEdit(
   chip: HTMLElement,
   current: string,
-  onChange: (value: string) => Promise<void>,
+  onChange: (value: string) => Promise<void> | void,
 ): void {
   const input = createEl("input");
   input.className = "zibase-inline-input";
@@ -68,7 +68,7 @@ export function startLabelEdit(
     const newVal = input.value.trim() || current;
     await onChange(newVal);
     chip.textContent = newVal;
-    chip.style.setProperty("--lc", getLabelColor(newVal));
+    chip.setCssProps({ "--lc": getLabelColor(newVal) });
     input.replaceWith(chip);
   };
   input.addEventListener("blur", () => { void commit(); });

@@ -65,11 +65,11 @@ export function parseZiBaseSchema(
 
 export function parseViewAnnotation(
   lines: string[],
-): { view: ViewName | string; groupBy: string | null } | null {
+): { view: ViewName; groupBy: string | null } | null {
   for (let i = 0; i < Math.min(lines.length, 3); i++) {
     const match = lines[i].match(VIEW_ANNOTATION_RE);
     if (match) {
-      return { view: match[1].toLowerCase(), groupBy: match[2] ? match[2].trim() : null };
+      return { view: match[1].toLowerCase() as ViewName, groupBy: match[2] ? match[2].trim() : null };
     }
   }
   return null;

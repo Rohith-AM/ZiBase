@@ -58,7 +58,7 @@ export function buildKanbanView(
     const color = getLabelColor(groupValue);
 
     const header = lane.createDiv("zibase-kanban-lane-header");
-    header.style.setProperty("--lane-color", color);
+    header.setCssProps({ "--lane-color": color });
     const headerLabel = header.createSpan({ text: groupValue, cls: "zibase-kanban-lane-title" });
     headerLabel.setCssStyles({ color });
     header.createSpan({ text: `${items.length}`, cls: "zibase-kanban-lane-count" });
@@ -73,7 +73,7 @@ export function buildKanbanView(
     laneBody.addEventListener("dragleave", () => {
       laneBody.classList.remove("zibase-kanban-lane-dragover");
     });
-    laneBody.addEventListener("drop", async (e) => {
+    laneBody.addEventListener("drop", (e) => {
       e.preventDefault();
       laneBody.classList.remove("zibase-kanban-lane-dragover");
       const fromIdxStr = e.dataTransfer?.getData("text/kanban-row");
@@ -88,7 +88,7 @@ export function buildKanbanView(
         if (!tags.includes(groupValue)) tags.push(groupValue);
         newValue = tags.join(", ");
       }
-      await host.writeBack(context, sectionInfo, schema.dataStartIndex + fromIdx, groupCol.index, newValue);
+      void host.writeBack(context, sectionInfo, schema.dataStartIndex + fromIdx, groupCol.index, newValue);
     });
 
     items.forEach(({ line, cells }) => {
@@ -111,7 +111,7 @@ export function buildKanbanView(
         if (col.type.kind === "text") {
           if (!card.querySelector(".zibase-kanban-card-title")) {
             const titleEl = card.createDiv("zibase-kanban-card-title");
-            void MarkdownRenderer.renderMarkdown(rawValue, titleEl, context.sourcePath, host.plugin);
+            void MarkdownRenderer.render(host.app, rawValue, titleEl, context.sourcePath, host.plugin);
             return;
           }
         }
@@ -121,7 +121,7 @@ export function buildKanbanView(
 
         if (col.type.kind === "label") {
           const chip = field.createSpan({ text: rawValue, cls: "zibase-label zibase-kanban-label" });
-          chip.style.setProperty("--lc", getLabelColor(rawValue));
+          chip.setCssProps({ "--lc": getLabelColor(rawValue) });
         } else if (col.type.kind === "toggle") {
           field.createSpan({ text: parseBool(rawValue) ? "✅" : "⬜", cls: "zibase-kanban-field-value" });
         } else if (col.type.kind === "number" || col.type.kind === "formula") {
@@ -136,7 +136,7 @@ export function buildKanbanView(
       if (!card.querySelector(".zibase-kanban-card-title")) {
         const titleEl = createDiv();
         titleEl.className = "zibase-kanban-card-title";
-        void MarkdownRenderer.renderMarkdown(cells[0] || "—", titleEl, context.sourcePath, host.plugin);
+        void MarkdownRenderer.render(host.app, cells[0] || "—", titleEl, context.sourcePath, host.plugin);
         card.insertBefore(titleEl, card.firstChild);
       }
     });

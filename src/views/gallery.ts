@@ -31,7 +31,7 @@ export function buildGalleryView(
     const titleCol = schema.columns.find((c) => c.type.kind === "text");
     const titleValue = titleCol ? (cells[titleCol.index] || "").trim() : (cells[0] || "").trim();
     const titleDiv = card.createDiv({ cls: "zibase-gallery-card-title" });
-    void MarkdownRenderer.renderMarkdown(titleValue || "—", titleDiv, context.sourcePath, host.plugin);
+    void MarkdownRenderer.render(host.app, titleValue || "—", titleDiv, context.sourcePath, host.plugin);
 
     const fieldsWrap = card.createDiv("zibase-gallery-card-fields");
     schema.columns.forEach((col, colIdx) => {
@@ -46,7 +46,7 @@ export function buildGalleryView(
         field.createSpan({ text: " " + col.name, cls: "zibase-gallery-field-name" });
       } else if (col.type.kind === "label") {
         const chip = field.createSpan({ text: rawValue, cls: "zibase-label" });
-        chip.style.setProperty("--lc", getLabelColor(rawValue));
+        chip.setCssProps({ "--lc": getLabelColor(rawValue) });
       } else if (col.type.kind === "select") {
         field.createSpan({ text: rawValue, cls: "zibase-gallery-field-select" });
       } else if (col.type.kind === "date") {

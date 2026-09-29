@@ -23,7 +23,7 @@ export interface ZiBasePluginLike extends Plugin {
   saveSettings(): Promise<void>;
 }
 
-export type CellChangeHandler = (newValue: string) => Promise<void>;
+export type CellChangeHandler = (newValue: string) => Promise<void> | void;
 
 export interface ZiBaseHost {
   app: App;

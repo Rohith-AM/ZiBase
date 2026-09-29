@@ -19,7 +19,7 @@ export function startMarkdownEdit(
   onChange: CellChangeHandler,
 ): void {
   if (td.querySelector(".zibase-inline-input")) return;
-  const displaySpan = td.querySelector(".zibase-text-rendered") as HTMLElement | null;
+  const displaySpan = td.querySelector<HTMLElement>(".zibase-text-rendered");
   if (displaySpan) displaySpan.setCssStyles({ display: "none" });
   const input = createEl("input");
   input.className = "zibase-inline-input";
@@ -65,7 +65,9 @@ export function renderCell(
       input.checked = checked;
       input.className = "zibase-toggle-input";
       label.createDiv("zibase-toggle-track").createDiv("zibase-toggle-thumb");
-      input.addEventListener("change", async () => await onChange(serializeBool(input.checked)));
+      input.addEventListener("change", () => {
+        void onChange(serializeBool(input.checked));
+      });
       break;
     }
     case "select": {
@@ -76,7 +78,9 @@ export function renderCell(
         if (opt === rawValue.trim()) o.selected = true;
       });
       if (!rawValue.trim()) select.options[0].selected = true;
-      select.addEventListener("change", async () => await onChange(select.value));
+      select.addEventListener("change", () => {
+        void onChange(select.value);
+      });
       break;
     }
     case "multi-select": {
@@ -88,7 +92,7 @@ export function renderCell(
       } else {
         tags.forEach((tag) => {
           const chip = wrap.createSpan({ text: tag, cls: "zibase-label" });
-          chip.style.setProperty("--lc", getLabelColor(tag));
+          chip.setCssProps({ "--lc": getLabelColor(tag) });
           chip.addEventListener("click", (e) => {
             e.stopPropagation();
             startLabelEdit(wrap, rawValue, onChange);
@@ -100,7 +104,7 @@ export function renderCell(
     }
     case "label": {
       const chip = td.createEl("span", { text: rawValue.trim() || "—", cls: "zibase-label" });
-      chip.style.setProperty("--lc", getLabelColor(rawValue.trim()));
+      chip.setCssProps({ "--lc": getLabelColor(rawValue.trim()) });
       chip.addEventListener("click", () => startLabelEdit(chip, rawValue.trim(), onChange));
       break;
     }
@@ -110,7 +114,9 @@ export function renderCell(
       let debounce = 0;
       input.addEventListener("input", () => {
         window.clearTimeout(debounce);
-        debounce = window.setTimeout(async () => await onChange(input.value), 400);
+        debounce = window.setTimeout(() => {
+          void onChange(input.value);
+        }, 400);
       });
       break;
     }
@@ -200,7 +206,7 @@ export function renderCell(
 
       const displaySpan = td.createSpan({ cls: "zibase-text-rendered" });
       if (val) {
-        void MarkdownRenderer.renderMarkdown(val, displaySpan, context.sourcePath, host.plugin).then(() => {
+        void MarkdownRenderer.render(host.app, val, displaySpan, context.sourcePath, host.plugin).then(() => {
           displaySpan.querySelectorAll("a").forEach((a) => attachLinkTooltip(a));
           td.addEventListener("click", (e) => {
             if (e.altKey) {

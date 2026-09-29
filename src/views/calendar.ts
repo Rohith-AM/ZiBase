@@ -98,26 +98,28 @@ export function buildCalendarView(
       const entries = dateMap.get(dateStr) || [];
       entries.forEach((entry) => {
         const pill = cell.createDiv("zibase-calendar-entry");
-        void MarkdownRenderer.renderMarkdown(entry.title || "—", pill, context.sourcePath, host.plugin);
+        void MarkdownRenderer.render(host.app, entry.title || "—", pill, context.sourcePath, host.plugin);
         if (entry.label) {
-          pill.style.setProperty("--lc", getLabelColor(entry.label));
+          pill.setCssProps({ "--lc": getLabelColor(entry.label) });
           pill.classList.add("zibase-calendar-entry-colored");
         }
       });
 
       if (entries.length === 0) {
-        cell.addEventListener("click", async () => {
-          const file = host.app.vault.getAbstractFileByPath(context.sourcePath);
-          if (!(file instanceof TFile)) return;
-          await host.app.vault.process(file, (content) => {
-            const allLines = content.split("\n");
-            const newCells = schema.columns.map((col) => {
-              if (col.index === dateCol.index) return ` ${dateStr} `;
-              return "   ";
+        cell.addEventListener("click", () => {
+          void (async () => {
+            const file = host.app.vault.getAbstractFileByPath(context.sourcePath);
+            if (!(file instanceof TFile)) return;
+            await host.app.vault.process(file, (content) => {
+              const allLines = content.split("\n");
+              const newCells = schema.columns.map((col) => {
+                if (col.index === dateCol.index) return ` ${dateStr} `;
+                return "   ";
+              });
+              allLines.splice(sectionInfo.lineEnd + 1, 0, serializeRow(newCells));
+              return allLines.join("\n");
             });
-            allLines.splice(sectionInfo.lineEnd + 1, 0, serializeRow(newCells));
-            return allLines.join("\n");
-          });
+          })();
         });
         cell.classList.add("zibase-calendar-cell-clickable");
       }

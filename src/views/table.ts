@@ -42,7 +42,7 @@ export function buildTableView(
     th.addEventListener("dragend", () => {
       thead.querySelectorAll(".zibase-th").forEach((el) => el.classList.remove("zibase-th-drop-target"));
     });
-    th.addEventListener("drop", async (e) => {
+    th.addEventListener("drop", (e) => {
       e.preventDefault();
       e.stopPropagation();
       th.classList.remove("zibase-th-drop-target");
@@ -50,23 +50,25 @@ export function buildTableView(
       if (!fromColStr) return;
       const fromColIdx = parseInt(fromColStr, 10);
       if (fromColIdx === colIdx) return;
-      const file = host.app.vault.getAbstractFileByPath(context.sourcePath);
-      if (!(file instanceof TFile)) return;
-      await host.app.vault.process(file, (content) => {
-        const allLines = content.split("\n");
-        for (let i = sectionInfo.lineStart; i <= sectionInfo.lineEnd; i++) {
-          const line = allLines[i];
-          if (!line.includes("|")) continue;
-          const cells = splitRow(line);
-          if (cells.length <= fromColIdx || cells.length <= colIdx) continue;
-          const draggedCell = cells.splice(fromColIdx, 1)[0];
-          let insertIdx = colIdx;
-          if (fromColIdx < colIdx) insertIdx--;
-          cells.splice(insertIdx, 0, draggedCell);
-          allLines[i] = serializeRow(cells);
-        }
-        return allLines.join("\n");
-      });
+      void (async () => {
+        const file = host.app.vault.getAbstractFileByPath(context.sourcePath);
+        if (!(file instanceof TFile)) return;
+        await host.app.vault.process(file, (content) => {
+          const allLines = content.split("\n");
+          for (let i = sectionInfo.lineStart; i <= sectionInfo.lineEnd; i++) {
+            const line = allLines[i];
+            if (!line.includes("|")) continue;
+            const cells = splitRow(line);
+            if (cells.length <= fromColIdx || cells.length <= colIdx) continue;
+            const draggedCell = cells.splice(fromColIdx, 1)[0];
+            let insertIdx = colIdx;
+            if (fromColIdx < colIdx) insertIdx--;
+            cells.splice(insertIdx, 0, draggedCell);
+            allLines[i] = serializeRow(cells);
+          }
+          return allLines.join("\n");
+        });
+      })();
     });
 
     const thInner = th.createDiv("zibase-th-inner");
@@ -188,7 +190,7 @@ export function buildTableView(
         tr.classList.add("zibase-row-drop-target");
       });
       tr.addEventListener("dragleave", () => tr.classList.remove("zibase-row-drop-target"));
-      tr.addEventListener("drop", async (e) => {
+      tr.addEventListener("drop", (e) => {
         e.preventDefault();
         e.stopPropagation();
         tr.classList.remove("zibase-row-drop-target");
@@ -197,31 +199,33 @@ export function buildTableView(
         const fromIdx = parseInt(fromIdxStr, 10);
         const toIdx = rawIdx;
         if (fromIdx !== toIdx) {
-          const file = host.app.vault.getAbstractFileByPath(context.sourcePath);
-          if (!(file instanceof TFile)) return;
-          await host.app.vault.process(file, (content) => {
-            const allLines = content.split("\n");
-            const fileStart = sectionInfo.lineStart + schema.dataStartIndex;
-            const dataLines = allLines.slice(fileStart, fileStart + rawDataLines.length);
-            const dragged = dataLines.splice(fromIdx, 1)[0];
-            let insertIdx = toIdx;
-            if (fromIdx < toIdx) insertIdx--;
-            dataLines.splice(insertIdx, 0, dragged);
-            allLines.splice(fileStart, rawDataLines.length, ...dataLines);
-            return allLines.join("\n");
-          });
+          void (async () => {
+            const file = host.app.vault.getAbstractFileByPath(context.sourcePath);
+            if (!(file instanceof TFile)) return;
+            await host.app.vault.process(file, (content) => {
+              const allLines = content.split("\n");
+              const fileStart = sectionInfo.lineStart + schema.dataStartIndex;
+              const dataLines = allLines.slice(fileStart, fileStart + rawDataLines.length);
+              const dragged = dataLines.splice(fromIdx, 1)[0];
+              let insertIdx = toIdx;
+              if (fromIdx < toIdx) insertIdx--;
+              dataLines.splice(insertIdx, 0, dragged);
+              allLines.splice(fileStart, rawDataLines.length, ...dataLines);
+              return allLines.join("\n");
+            });
+          })();
         }
       });
       schema.columns.forEach((col, colIdx) => {
         const td = tr.createEl("td", { cls: "zibase-td" });
         const rawValue = cells[colIdx] ?? "";
-        host.renderCell(td, col, rawValue, context, schema, cells, async (newValue) => {
+        host.renderCell(td, col, rawValue, context, schema, cells, (newValue) => {
           if (rawIdx !== -1) {
             const updatedCells = splitRow(rawDataLines[rawIdx]);
             updatedCells[colIdx] = ` ${newValue} `;
             rawDataLines[rawIdx] = serializeRow(updatedCells);
           }
-          await host.writeBack(context, sectionInfo, schema.dataStartIndex + rawIdx, colIdx, newValue);
+          void host.writeBack(context, sectionInfo, schema.dataStartIndex + rawIdx, colIdx, newValue);
         });
       });
     });
