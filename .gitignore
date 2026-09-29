@@ -1,5 +1,7 @@
-# Build dependencies (created when someone runs: npm install)
+# Build
 node_modules/
 
-# macOS junk files
+# Editor / OS
 .DS_Store
+.vscode/
+ZiBase(Now active)/

@@ -1,20 +1,21 @@
+import { Plugin, PluginSettingTab, Setting, type App, type Editor } from "obsidian";
+import { DEFAULT_COLUMN_RULES } from "./schema";
+import { ZiBaseTableRenderer } from "./renderer";
+import { COLUMN_TYPE_OPTIONS, type ColumnRule, type ZiBaseSettings } from "./model";
+import { PLUGIN_VERSION } from "./version";
 
-let main_exports = {};
-__export(main_exports, {
-  default: () => ZiBasePlugin
-});
-module.exports = __toCommonJS(main_exports);
-import * as import_obsidian2 from "obsidian";
-
-
-let DEFAULT_SETTINGS = {
+const DEFAULT_SETTINGS: ZiBaseSettings = {
   renderInReadingView: true,
   inferSchema: true,
-  columnRules: [...DEFAULT_COLUMN_RULES]
+  columnRules: [...DEFAULT_COLUMN_RULES],
 };
-let ZiBasePlugin = class extends import_obsidian2.Plugin {
-  async onload() {
-    console.log("ZiBase v1.0.0 loaded \u2014 \u0BB4\u0BBF\u0BAF\u0BB2\u0BCD");
+
+export default class ZiBasePlugin extends Plugin {
+  settings: ZiBaseSettings = DEFAULT_SETTINGS;
+  renderer!: ZiBaseTableRenderer;
+
+  async onload(): Promise<void> {
+    console.log(`ZiBase v${PLUGIN_VERSION} loaded — ழியல்`);
     await this.loadSettings();
     this.renderer = new ZiBaseTableRenderer(this.app, this);
     if (this.settings.renderInReadingView) {
@@ -25,109 +26,128 @@ let ZiBasePlugin = class extends import_obsidian2.Plugin {
     this.addCommand({
       id: "insert-table",
       name: "Insert annotated table",
-      editorCallback: (editor) => {
+      editorCallback: (editor: Editor) => {
         const template = [
           "| Name | Status | Priority | Tags |",
           "|------|--------|----------|------|",
           "| <!-- zibase: text --> | <!-- zibase: toggle --> | <!-- zibase: select:Low,Medium,High --> | <!-- zibase: label --> |",
           "| Item 1 | true | High | biology |",
-          "| Item 2 | false | Low | chemistry |"
+          "| Item 2 | false | Low | chemistry |",
         ].join("\n");
         editor.replaceSelection(template);
-      }
+      },
     });
     this.addCommand({
       id: "insert-plain-table",
       name: "Insert plain table (auto-inferred)",
-      editorCallback: (editor) => {
+      editorCallback: (editor: Editor) => {
         const template = [
           "| Name | Done | Score | Category |",
           "|------|------|-------|----------|",
           "| Task A | true | 90 | Work |",
           "| Task B | false | 75 | Work |",
-          "| Task C | true | 82 | Personal |"
+          "| Task C | true | 82 | Personal |",
         ].join("\n");
         editor.replaceSelection(template);
-      }
+      },
     });
     this.addCommand({
       id: "insert-formula-table",
       name: "Insert table with formula column",
-      editorCallback: (editor) => {
+      editorCallback: (editor: Editor) => {
         const template = [
           "| Item | Price | Qty | Total |",
           "|------|-------|-----|-------|",
           "| <!-- zibase: text --> | <!-- zibase: number --> | <!-- zibase: number --> | <!-- zibase: formula:Price * Qty --> |",
           "| Pen | 10 | 5 |  |",
           "| Book | 250 | 2 |  |",
-          "| Eraser | 5 | 10 |  |"
+          "| Eraser | 5 | 10 |  |",
         ].join("\n");
         editor.replaceSelection(template);
-      }
+      },
     });
     this.addSettingTab(new ZiBaseSettingTab(this.app, this));
-    
   }
-  onunload() {
-    
-  }
-  async loadSettings() {
-    this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
+
+  async loadSettings(): Promise<void> {
+    this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData()) as ZiBaseSettings;
     if (!this.settings.columnRules || this.settings.columnRules.length === 0) {
       this.settings.columnRules = [...DEFAULT_COLUMN_RULES];
     }
   }
-  async saveSettings() {
+
+  async saveSettings(): Promise<void> {
     await this.saveData(this.settings);
   }
-};
-let ZiBaseSettingTab = class extends import_obsidian2.PluginSettingTab {
-  constructor(app, plugin) {
+}
+
+class ZiBaseSettingTab extends PluginSettingTab {
+  plugin: ZiBasePlugin;
+
+  constructor(app: App, plugin: ZiBasePlugin) {
     super(app, plugin);
     this.plugin = plugin;
   }
-  display() {
+
+  display(): void {
     const { containerEl } = this;
     containerEl.empty();
-    containerEl.createEl("h2", { text: "ZiBase \u2014 \u0BB4\u0BBF\u0BAF\u0BB2\u0BCD" });
+    containerEl.createEl("h2", { text: "ZiBase — ழியல்" });
     containerEl.createEl("p", {
       text: "Markdown tables as living databases.",
-      cls: "zibase-settings-desc"
+      cls: "zibase-settings-desc",
     });
-    containerEl.createEl("h3", { text: "\u2699\uFE0F General" });
-    new import_obsidian2.Setting(containerEl).setName("Render in Reading View").setDesc("Show rich UI when viewing notes in reading mode.").addToggle((t) => t.setValue(this.plugin.settings.renderInReadingView).onChange(async (v) => {
-      this.plugin.settings.renderInReadingView = v;
-      await this.plugin.saveSettings();
-    }));
-    new import_obsidian2.Setting(containerEl).setName("Auto-infer schema").setDesc("Automatically detect column types from plain markdown tables.").addToggle((t) => t.setValue(this.plugin.settings.inferSchema).onChange(async (v) => {
-      this.plugin.settings.inferSchema = v;
-      await this.plugin.saveSettings();
-    }));
-    containerEl.createEl("h3", { text: "\u{1F3F7}\uFE0F Column Name Rules" });
+    containerEl.createEl("h3", { text: "⚙️ General" });
+    new Setting(containerEl)
+      .setName("Render in Reading View")
+      .setDesc("Show rich UI when viewing notes in reading mode.")
+      .addToggle((t) =>
+        t.setValue(this.plugin.settings.renderInReadingView).onChange(async (v) => {
+          this.plugin.settings.renderInReadingView = v;
+          await this.plugin.saveSettings();
+        }),
+      );
+    new Setting(containerEl)
+      .setName("Auto-infer schema")
+      .setDesc("Automatically detect column types from plain markdown tables. Turn off to only enhance annotated tables.")
+      .addToggle((t) =>
+        t.setValue(this.plugin.settings.inferSchema).onChange(async (v) => {
+          this.plugin.settings.inferSchema = v;
+          await this.plugin.saveSettings();
+        }),
+      );
+    containerEl.createEl("h3", { text: "🏷️ Column Name Rules" });
     containerEl.createEl("p", {
       text: "When a column name matches, auto-assign that type. Applied to all inferred tables.",
-      cls: "zibase-settings-desc"
+      cls: "zibase-settings-desc",
     });
     const rulesContainer = containerEl.createDiv("zibase-rules-container");
     this.renderRules(rulesContainer);
-    new import_obsidian2.Setting(containerEl).addButton((btn) => btn.setButtonText("+ Add rule").setCta().onClick(async () => {
-      this.plugin.settings.columnRules.push({ name: "", type: "label" });
-      await this.plugin.saveSettings();
-      this.renderRules(rulesContainer);
-    }));
-    new import_obsidian2.Setting(containerEl).setName("Reset to defaults").setDesc("Restore the original column name rules.").addButton((btn) => btn.setButtonText("Reset").setWarning().onClick(async () => {
-      this.plugin.settings.columnRules = [...DEFAULT_COLUMN_RULES];
-      await this.plugin.saveSettings();
-      this.renderRules(rulesContainer);
-    }));
-    containerEl.createEl("h3", { text: "\u2139\uFE0F About" });
-    containerEl.createEl("p", { text: "ZiBase v1.0.0 \u2014 Built by Rohith A (ZIYAL)", cls: "zibase-settings-desc" });
-    containerEl.createEl("p", { text: "Markdown-native database plugin for Obsidian.", cls: "zibase-settings-desc" });
+    new Setting(containerEl).addButton((btn) =>
+      btn.setButtonText("+ Add rule").setCta().onClick(async () => {
+        this.plugin.settings.columnRules.push({ name: "", type: "label" });
+        await this.plugin.saveSettings();
+        this.renderRules(rulesContainer);
+      }),
+    );
+    new Setting(containerEl)
+      .setName("Reset to defaults")
+      .setDesc("Restore the original column name rules.")
+      .addButton((btn) =>
+        btn.setButtonText("Reset").setWarning().onClick(async () => {
+          this.plugin.settings.columnRules = [...DEFAULT_COLUMN_RULES];
+          await this.plugin.saveSettings();
+          this.renderRules(rulesContainer);
+        }),
+      );
+    containerEl.createEl("h3", { text: "ℹ️ About" });
+    containerEl.createEl("p", { text: `ZiBase v${PLUGIN_VERSION} — Built by Rohith A (ZIYAL)`, cls: "zibase-settings-desc" });
+    containerEl.createEl("p", { text: "Markdown-native database plugin.", cls: "zibase-settings-desc" });
   }
-  renderRules(container) {
+
+  renderRules(container: HTMLElement): void {
     container.empty();
-    const TYPE_OPTIONS = ["text", "toggle", "select", "label", "number", "date", "formula"];
-    this.plugin.settings.columnRules.forEach((rule, idx) => {
+    this.plugin.settings.columnRules.forEach((rule: ColumnRule, idx: number) => {
       const row = container.createDiv("zibase-rule-row");
       const nameInput = row.createEl("input", { type: "text", cls: "zibase-rule-name", value: rule.name });
       nameInput.placeholder = "column name";
@@ -135,18 +155,17 @@ let ZiBaseSettingTab = class extends import_obsidian2.PluginSettingTab {
         this.plugin.settings.columnRules[idx].name = nameInput.value.trim();
         await this.plugin.saveSettings();
       });
-      row.createSpan({ text: "\u2192", cls: "zibase-rule-arrow" });
+      row.createSpan({ text: "→", cls: "zibase-rule-arrow" });
       const typeSelect = row.createEl("select", { cls: "zibase-rule-type" });
-      TYPE_OPTIONS.forEach((t) => {
+      COLUMN_TYPE_OPTIONS.forEach((t) => {
         const opt = typeSelect.createEl("option", { text: t, value: t });
-        if (t === rule.type)
-          opt.selected = true;
+        if (t === rule.type) opt.selected = true;
       });
       typeSelect.addEventListener("change", async () => {
         this.plugin.settings.columnRules[idx].type = typeSelect.value;
         await this.plugin.saveSettings();
       });
-      const removeBtn = row.createEl("button", { text: "\xD7", cls: "zibase-rule-remove" });
+      const removeBtn = row.createEl("button", { text: "×", cls: "zibase-rule-remove" });
       removeBtn.addEventListener("click", async () => {
         this.plugin.settings.columnRules.splice(idx, 1);
         await this.plugin.saveSettings();
@@ -154,4 +173,4 @@ let ZiBaseSettingTab = class extends import_obsidian2.PluginSettingTab {
       });
     });
   }
-};
+}

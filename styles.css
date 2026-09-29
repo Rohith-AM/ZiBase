@@ -32,7 +32,10 @@
 .zibase-body-collapsed { max-height: 0 !important; opacity: 0; overflow: hidden; }
 .zibase-table { width: 100%; border-collapse: collapse; background: var(--background-primary); }
 .zibase-th { padding: 8px 14px; text-align: left; font-size: 0.78em; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; color: var(--text-muted); background: var(--background-secondary-alt); border-bottom: 1px solid var(--background-modifier-border); white-space: nowrap; cursor: pointer; user-select: none; position: relative; }
-.zibase-th:hover { background: var(--background-modifier-hover); }
+.zibase-th-drop-target { border-left: 2px solid var(--interactive-accent); }
+.zibase-row-dragging { opacity: 0.5; }
+.zibase-row-drop-target { border-top: 2px solid var(--interactive-accent); }
+.zibase-modal-formula-input { margin-top: 8px; margin-bottom: 12px; }
 .zibase-th-inner { display: flex; align-items: center; gap: 5px; }
 .zibase-th-name { flex: 1; }
 .zibase-type-icon { opacity: 0.4; font-size: 0.85em; }
